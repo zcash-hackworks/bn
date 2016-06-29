@@ -11,3 +11,5 @@ documentation = "https://ebfull.github.io/bn/"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+num = "0.1.32"
+rand = "0.3.14"
