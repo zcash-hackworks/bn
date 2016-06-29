@@ -1,0 +1,13 @@
+[package]
+name = "bn"
+version = "0.1.0"
+authors = ["Sean Bowe <ewillbefull@gmail.com>"]
+description = "Pairing cryptography with the Barreto-Naehrig curve"
+keywords = ["pairing","crypto","cryptography"]
+readme = "README.md"
+homepage = "https://github.com/zcash/bn"
+repository = "https://github.com/zcash/bn"
+documentation = "https://ebfull.github.io/bn/"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
