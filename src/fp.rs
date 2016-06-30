@@ -215,6 +215,7 @@ forward_all_binop_to_ref_ref!(impl(P: PrimeFieldParams) Mul for Fp<P>, mul);
 #[cfg(test)]
 mod large_field_tests {
     use super::*;
+    use rand::{Rng,SeedableRng,StdRng};
     use num::{BigUint, Num};
 
     struct Small;
@@ -229,6 +230,65 @@ mod large_field_tests {
     }
 
     type Ft = Fp<Small>;
+
+    #[test]
+    fn rand_element_squaring() {
+        let seed: [usize; 4] = [0, 0, 0, 0];
+        let rng = &mut StdRng::from_seed(&seed);
+
+        for _ in 0..100 {
+            let a = Ft::random(rng);
+
+            let mul = &a * &a;
+            let sq = a.squared();
+
+            assert!(sq == mul);
+        }
+
+        let mut cur = Ft::zero();
+        for _ in 0..100 {
+            let mul = &cur * &cur;
+            let sq = cur.squared();
+
+            assert!(sq == mul);
+
+            cur = &cur + &Ft::one();
+        }
+    }
+
+    #[test]
+    fn rand_element_multiplication() {
+        // If field is not associative under multiplication, 1/8 of all triplets a, b, c
+        // will fail the test (a*b)*c = a*(b*c).
+
+        let seed: [usize; 4] = [0, 0, 0, 0];
+        let rng = &mut StdRng::from_seed(&seed);
+
+        for _ in 0..250 {
+            let a = &Ft::random(rng);
+            let b = &Ft::random(rng);
+            let c = &Ft::random(rng);
+
+            assert!((a * b) * c == (b * c) * a);
+        }
+    }
+
+    #[test]
+    fn rand_element_inverse() {
+        let seed: [usize; 4] = [0, 0, 0, 0];
+        let rng = &mut StdRng::from_seed(&seed);
+
+        for _ in 0..100 {
+            let mut n = Ft::random(rng);
+            n = n.inverse() * n;
+            assert_eq!(n, Ft::one());
+        }
+        for _ in 0..100 {
+            let a = Ft::random(rng);
+            let b = Ft::random(rng);
+            assert_eq!(&a * &b * (a.inverse()), b);
+        }
+    }
 
     #[test]
     fn bit_testing() {
