@@ -1,5 +1,5 @@
 use num::{Num,BigUint};
-use fp::PrimeFieldParams;
+use fields::fp::PrimeFieldParams;
 
 pub struct FrParams;
 
@@ -19,4 +19,18 @@ impl PrimeFieldParams for FqParams {
     }
     fn bits() -> usize { 254 }
     fn name() -> &'static str { "Fq" }
+}
+
+#[test]
+fn test_fr() {
+    use fields;
+
+    fields::tests::field_trials::<fields::fp::Fp<FrParams>>();
+}
+
+#[test]
+fn test_fq() {
+    use fields;
+
+    fields::tests::field_trials::<fields::fp::Fp<FqParams>>();
 }

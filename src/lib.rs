@@ -3,5 +3,5 @@ extern crate rand;
 
 #[macro_use]
 mod macros;
-mod fp;
+mod fields;
 mod params;
