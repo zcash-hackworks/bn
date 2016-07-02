@@ -1,7 +1,8 @@
 use num::{Num,BigUint};
 use fields::Field;
 use fields::fp::PrimeFieldParams;
-use super::{Fr,Fq,G1};
+use fields::fp2::Fp2Params;
+use super::{Fr,Fq,Fq2,G1,G2};
 use groups::*;
 
 pub struct FrParams;
@@ -28,20 +29,20 @@ impl PrimeFieldParams for FqParams {
 fn test_fr() {
     use fields;
 
-    fields::tests::field_trials::<super::Fr>();
+    fields::tests::field_trials::<Fr>();
 }
 
 #[test]
 fn test_fq() {
     use fields;
 
-    fields::tests::field_trials::<super::Fq>();
+    fields::tests::field_trials::<Fq>();
 }
 
 pub struct G1Params;
 
 impl GroupParams for G1Params {
-    type Base = super::Fq;
+    type Base = Fq;
 
     fn name() -> &'static str {
         "G1"
@@ -62,12 +63,15 @@ fn test_g1() {
     use groups;
 
     groups::tests::group_trials::<G1Params>();
+
+    assert_eq!(G1::zero(), G1::one() + (G1::zero() - G1::one()));
+    assert_eq!(G1::zero(), G1::one() * Fr::from("21888242871839275222246405745257275088548364400416034343698204186575808495616") + G1::one());
 }
 
 #[test]
 fn g1_test_vector() {
-    let a = G1::one() * &Fr::from("19797905000333868150253315089095386158892526856493194078073564469188852136946");
-    let b = G1::one() * &Fr::from("2730506433347642574983433139433778984782882168213690554721050571242082865799");
+    let a = G1::one() * Fr::from("19797905000333868150253315089095386158892526856493194078073564469188852136946");
+    let b = G1::one() * Fr::from("2730506433347642574983433139433778984782882168213690554721050571242082865799");
     let e = &a + &b;
 
     let expect = G1::new(
@@ -76,5 +80,89 @@ fn g1_test_vector() {
         Fq::one()
     ).unwrap();
 
-    assert!(expect.eq(&e));
+    assert_eq!(expect, e);
+}
+
+pub struct Fq2Params;
+
+impl Fp2Params for Fq2Params {
+    fn non_residue() -> Fq {
+        Fq::from("21888242871839275222246405745257275088696311157297823662689037894645226208582")
+    }
+    fn name() -> &'static str {
+        "Fq2"
+    }
+}
+
+#[test]
+fn test_fq2() {
+    use fields;
+
+    fields::tests::field_trials::<Fq2>();
+}
+
+pub struct G2Params;
+
+impl G2Params {
+    pub fn twist() -> Fq2 {
+        Fq2::new(Fq::from("9"), Fq::from("1"))
+    }
+}
+
+impl GroupParams for G2Params {
+    type Base = Fq2;
+
+    fn name() -> &'static str {
+        "G2"
+    }
+    fn zero() -> Jacobian<Self> {
+        Jacobian::new(Fq2::zero(), Fq2::one(), Fq2::zero()).unwrap()
+    }
+    fn one() -> Jacobian<Self> {
+        Jacobian::new(
+            Fq2::new(
+                Fq::from("10857046999023057135944570762232829481370756359578518086990519993285655852781"),
+                Fq::from("11559732032986387107991004021392285783925812861821192530917403151452391805634")
+            ),
+            Fq2::new(
+                Fq::from("8495653923123431417604973247489272438418190587263600148770280649306958101930"),
+                Fq::from("4082367875863433681332203403145435568316851327593401208105741076214120093531")
+            ),
+            Fq2::one()
+        ).unwrap()
+    }
+    fn coeff_b() -> Self::Base {
+        &G2Params::twist().inverse() * &Fq::from("3")
+    }
+}
+
+#[test]
+fn test_g2() {
+    use groups;
+
+    groups::tests::group_trials::<G2Params>();
+
+    assert_eq!(G2::zero(), G2::one() + (G2::zero() - G2::one()));
+    assert_eq!(G2::zero(), G2::one() * Fr::from("21888242871839275222246405745257275088548364400416034343698204186575808495616") + G2::one());
+}
+
+#[test]
+fn g2_test_vector() {
+    let a = G2::one() * Fr::from("19797905000333868150253315089095386158892526856493194078073564469188852136946");
+    let b = G2::one() * Fr::from("2730506433347642574983433139433778984782882168213690554721050571242082865799");   
+    let e = &a + &b;
+
+    let expect = G2::new(
+        Fq2::new(
+            Fq::from("10805137482603266627116066166226222153808813611856467496561473491230213987197"),
+            Fq::from("11018998371825437935082073888099464993330606622517843684670450190973893289235")
+        ),
+        Fq2::new(
+            Fq::from("371699491666579792038680273553261511891341995868329474144713691525212078012"),
+            Fq::from("2123259504314265904107110265140842273706723557882599408954283209162529085097")
+        ),
+        Fq2::one()
+    ).unwrap();
+
+    assert_eq!(expect, e);
 }

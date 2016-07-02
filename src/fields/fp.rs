@@ -82,25 +82,6 @@ impl<P: PrimeFieldParams> Field for Fp<P> {
             res
         }
     }
-    
-    fn pow<P2: PrimeFieldParams>(&self, exp: &Fp<P2>) -> Self {
-        let mut res = Self::one();
-
-        let mut found_one = false;
-
-        for i in (0..P2::bits()).rev() {
-            if found_one {
-                res = res.squared();
-            }
-
-            if exp.test_bit(i) {
-                found_one = true;
-                res = res * self;
-            }
-        }
-
-        res
-    }
 
     fn neg(&self) -> Self {
         use num::Zero;
