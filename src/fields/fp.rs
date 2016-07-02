@@ -181,7 +181,12 @@ impl<'a, P: PrimeFieldParams> From<&'a str> for Fp<P> {
 }
 
 impl<P: PrimeFieldParams> Clone for Fp<P> {
-    fn clone(&self) -> Self { unimplemented!() }
+    fn clone(&self) -> Self {
+        Fp {
+            value: self.value.clone(),
+            _marker: PhantomData
+        }
+    }
 }
 
 forward_ops_to_field_ops!(impl(P: PrimeFieldParams) Fp<P>);

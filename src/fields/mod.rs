@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 pub mod fp;
 
 #[cfg(test)]
@@ -5,8 +8,9 @@ pub mod tests;
 
 use rand::Rng;
 use self::fp::{Fp, PrimeFieldParams};
+use std::fmt::Debug;
 
-pub trait Field: Sized + Clone {
+pub trait Field: Sized + Clone + Debug {
 	fn zero() -> Self;
 	fn one() -> Self;
     fn random<R: Rng>(rng: &mut R) -> Self;
