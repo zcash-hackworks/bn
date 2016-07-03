@@ -51,12 +51,6 @@ impl<P: PrimeFieldParams> Field for Fp<P> {
         }
     }
 
-    fn is_zero(&self) -> bool {
-        use num::Zero;
-
-        self.value == BigUint::zero()
-    }
-
     fn inverse(&self) -> Self {
         if self.is_zero() {
             // TODO: this should likely bleed through the abstraction layers

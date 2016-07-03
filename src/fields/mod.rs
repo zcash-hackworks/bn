@@ -3,6 +3,8 @@ mod macros;
 
 pub mod fp;
 pub mod fp2;
+pub mod fp6;
+pub mod fp12;
 
 #[cfg(test)]
 pub mod tests;
@@ -15,7 +17,9 @@ pub trait Field: Sized + Clone + Debug {
     fn zero() -> Self;
     fn one() -> Self;
     fn random<R: Rng>(rng: &mut R) -> Self;
-    fn is_zero(&self) -> bool;
+    fn is_zero(&self) -> bool {
+        self.eq(&Self::zero())
+    }
     fn inverse(&self) -> Self;
     fn squared(&self) -> Self {
         self.mul(self)
