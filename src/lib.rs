@@ -400,6 +400,7 @@ fn test_binlinearity() {
 
         let t = Fr::zero().sub(&Fr::one());
 
+        assert!(a != Gt::new(Fq12::one()));
         assert_eq!((&a ^ t) * &a, Gt::new(Fq12::one()));
     }
 }
