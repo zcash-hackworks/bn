@@ -6,7 +6,7 @@ This is a [pairing cryptography](https://en.wikipedia.org/wiki/Pairing-based_cry
 
 *e: G<sub>1</sub> × G<sub>2</sub> → G<sub>T</sub>*
 
-**This code is still under development and should not be used in production software.**
+**This code is still in early development and should not be used in production software.**
 
 ## Usage
 
