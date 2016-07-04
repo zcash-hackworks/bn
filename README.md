@@ -36,28 +36,23 @@ extern crate bn;
 
 In a typical Diffie-Hellman key exchange, relying on ECDLP, a three-party key exchange requires two rounds. A single round protocol is possible through the use of a bilinear pairing: given Alice's public key *a*P<sub>1</sub> and Bob's public key *b*P<sub>2</sub>, Carol can compute the shared secret with her private key *c* by *e*(*a*P<sub>1</sub>, *b*P<sub>2</sub>)<sup>c</sup>.
 
+(See `examples/joux.rs` for the full example.)
+
 ```rust
-extern crate bn;
-extern crate rand;
-
-use bn::{Scalar, G1, G2, pairing};
-
-let rng = &mut rand::thread_rng();
-
 // Generate private keys
 let alice_sk = Scalar::random(rng);
 let bob_sk = Scalar::random(rng);
 let carol_sk = Scalar::random(rng);
 
 // Generate public keys in G1 and G2
-let (alice_pk1, alice_pk2) = (G1::one() * alice_sk, G2::one() * alice_sk);
-let (bob_pk1, bob_pk2) = (G1::one() * bob_sk, G2::one() * bob_sk);
-let (carol_pk1, carol_pk2) = (G1::one() * carol_sk, G2::one() * carol_sk);
+let (alice_pk1, alice_pk2) = (G1::one() * &alice_sk, G2::one() * &alice_sk);
+let (bob_pk1, bob_pk2) = (G1::one() * &bob_sk, G2::one() * &bob_sk);
+let (carol_pk1, carol_pk2) = (G1::one() * &carol_sk, G2::one() * &carol_sk);
 
 // Each party computes the shared secret
-let alice_dh = pairing(&bob_pk1, &carol_pk2).pow(&alice_sk);
-let bob_dh = pairing(&alice_pk2, &carol_pk1).pow(&bob_sk);
-let carol_dh = pairing(&alice_pk1, &bob_pk2).pow(&carol_sk);
+let alice_dh = pairing(&bob_pk1, &carol_pk2) ^ &alice_sk;
+let bob_dh = pairing(&carol_pk1, &alice_pk2) ^ &bob_sk;
+let carol_dh = pairing(&alice_pk1, &bob_pk2) ^ &carol_sk;
 
 assert!(alice_dh == bob_dh && bob_dh == carol_dh);
 ```
