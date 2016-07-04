@@ -7,7 +7,6 @@ keywords = ["pairing","crypto","cryptography"]
 readme = "README.md"
 homepage = "https://github.com/zcash/bn"
 repository = "https://github.com/zcash/bn"
-documentation = "https://ebfull.github.io/bn/"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
