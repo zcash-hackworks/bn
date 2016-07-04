@@ -9,6 +9,7 @@ use std::fmt;
 pub trait Fp2Params {
     fn non_residue() -> Fq;
     fn name() -> &'static str;
+    fn frobenius_coeffs_c1(usize) -> Fq;
 }
 
 pub struct Fp2<P: Fp2Params> {
@@ -22,6 +23,14 @@ impl<P: Fp2Params> Fp2<P> {
         Fp2 {
             a: a,
             b: b,
+            _marker: PhantomData
+        }
+    }
+
+    pub fn frobenius_map(&self, power: usize) -> Self {
+        Fp2 {
+            a: self.a.clone(),
+            b: &self.b * P::frobenius_coeffs_c1(power % 2),
             _marker: PhantomData
         }
     }

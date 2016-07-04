@@ -1,6 +1,7 @@
 use fields::Field;
 use fields::fp::{PrimeFieldParams, Fp};
-use super::Fr;
+use params::G2Params;
+use super::{Fr,Fq,Fq2};
 use rand::Rng;
 use std::ops::{Add,Mul,Sub,Neg};
 use std::fmt;
@@ -55,19 +56,61 @@ impl<P: GroupParams> Clone for Affine<P> {
     }
 }
 
+#[derive(PartialEq, Eq)]
+pub struct ell_coeffs {
+    pub ell_0: Fq2,
+    pub ell_VW: Fq2,
+    pub ell_VV: Fq2
+}
+
 impl<P: GroupParams> Affine<P> {
-/*
-    fn to_jacobian(self) -> Jacobian<P> {
-        match self {
+    pub fn get_x(&self) -> P::Base {
+        match *self {
+            Affine::Zero => P::Base::zero(),
+            Affine::Point{ref x, ref y} => x.clone()
+        }
+    }
+
+    pub fn get_y(&self) -> P::Base {
+        match *self {
+            Affine::Zero => P::Base::one(),
+            Affine::Point{ref x, ref y} => y.clone()
+        }
+    }
+
+    pub fn to_jacobian(&self) -> Jacobian<P> {
+        match *self {
             Affine::Zero => P::zero(),
-            Affine::Point{x, y} => Jacobian {
-                x: x,
-                y: y,
+            Affine::Point{ref x, ref y} => Jacobian {
+                x: x.clone(),
+                y: y.clone(),
                 z: P::Base::one()
             }
         }
     }
-*/
+
+    pub fn neg(&self) -> Self {
+        match *self {
+            Affine::Zero => Affine::Zero,
+            Affine::Point{ref x, ref y} => Affine::Point{x: x.clone(), y: y.neg()}
+        }
+    }
+}
+
+impl Jacobian<G2Params> {
+    pub fn mul_by_q(&self) -> Jacobian<G2Params> {
+        Jacobian {
+            x: G2Params::twist_mul_by_q_X() * self.x.frobenius_map(1),
+            y: G2Params::twist_mul_by_q_Y() * self.y.frobenius_map(1),
+            z: self.z.frobenius_map(1)
+        }
+    }
+}
+
+impl Affine<G2Params> {
+    pub fn mul_by_q(&self) -> Affine<G2Params> {
+        self.to_jacobian().mul_by_q().to_affine()
+    }
 }
 
 impl<P: GroupParams> Jacobian<P> {
@@ -252,4 +295,58 @@ impl<P: GroupParams> Jacobian<P> {
     }
 }
 
+impl Jacobian<G2Params> {
+    pub fn mixed_addition_step_for_flipped_miller_loop(&mut self, base: &Affine<G2Params>) -> ell_coeffs {
+        let d = &self.x - &self.z * &base.get_x();
+        let e = &self.y - &self.z * &base.get_y();
+        let f = d.squared();
+        let g = e.squared();
+        let h = &d * &f;
+        let i = &self.x * &f;
+        let j = &self.z * &g + &h - (&i + &i);
+
+        self.x = &d * &j;
+        self.y = &e * (&i - &j) - &h * &self.y;
+        self.z = &self.z * &h;
+
+        ell_coeffs {
+            ell_0: G2Params::twist() * (&e * &base.get_x() - &d * &base.get_y()),
+            ell_VV: e.neg(),
+            ell_VW: d
+        }
+    }
+
+    pub fn doubling_step_for_flipped_miller_loop(&mut self, two_inv: &Fq) -> ell_coeffs {
+        let a = &(&self.x * &self.y) * two_inv;
+        let b = self.y.squared();
+        let c = self.z.squared();
+        let d = &c + &c + &c;
+        let e = G2Params::coeff_b() * &d;
+        let f = &e + &e + &e;
+        let g = &(&b + &f) * two_inv;
+        let h = (&self.y + &self.z).squared() - (&b + &c);
+        let i = &e - &b;
+        let j = self.x.squared();
+        let e_sq = e.squared();
+
+        self.x = &a * (&b - &f);
+        self.y = g.squared() - (&e_sq + &e_sq + &e_sq);
+        self.z = &b * &h;
+
+        ell_coeffs {
+            ell_0: G2Params::twist() * &i,
+            ell_VW: h.neg(),
+            ell_VV: &j + &j + &j
+        }
+    }
+}
+
 forward_ops_to_group_ops!(impl(P: GroupParams) Jacobian<P>);
+
+impl<P: GroupParams> PartialEq for Affine<P> {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_jacobian() == other.to_jacobian()
+    }
+}
+
+impl<P: GroupParams> Eq for Affine<P> { }

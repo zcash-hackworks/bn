@@ -9,12 +9,14 @@ use std::fmt;
 pub trait Fp6Params {
     fn non_residue() -> Fq2;
     fn name() -> &'static str;
+    fn frobenius_coeffs_c1(usize) -> Fq2;
+    fn frobenius_coeffs_c2(usize) -> Fq2;
 }
 
 pub struct Fp6<P: Fp6Params> {
-    a: Fq2,
-    b: Fq2,
-    c: Fq2,
+    pub a: Fq2,
+    pub b: Fq2,
+    pub c: Fq2,
     _marker: PhantomData<P>
 }
 
@@ -24,6 +26,15 @@ impl<P: Fp6Params> Fp6<P> {
             a: a,
             b: b,
             c: c,
+            _marker: PhantomData
+        }
+    }
+
+    pub fn frobenius_map(&self, power: usize) -> Self {
+        Fp6 {
+            a: self.a.frobenius_map(power),
+            b: self.b.frobenius_map(power) * P::frobenius_coeffs_c1(power % 6),
+            c: self.c.frobenius_map(power) * P::frobenius_coeffs_c2(power % 6),
             _marker: PhantomData
         }
     }
@@ -114,6 +125,27 @@ impl<P: Fp6Params> Field for Fp6<P> {
         }
     }
 
+    fn squared(&self) -> Self {
+        let a = &self.a;
+        let b = &self.b;
+        let c = &self.c;
+
+        let s0 = a.squared();
+        let ab = a * b;
+        let s1 = &ab + &ab;
+        let s2 = (a - b + c).squared();
+        let bc = b * c;
+        let s3 = &bc + &bc;
+        let s4 = c.squared();
+
+        Fp6 {
+            a: &s0 + &s3 * P::non_residue(),
+            b: &s1 + &s4 * P::non_residue(),
+            c: &s1 + &s2 + &s3 - &s0 - &s4,
+            _marker: PhantomData
+        }
+    }
+
     fn sub(&self, other: &Self) -> Self {
         Fp6 {
             a: &self.a - &other.a,
@@ -142,6 +174,19 @@ impl<P: Fp6Params> Fp6<P> {
 			_marker: PhantomData
 		}
 	}
+}
+
+impl<'a, 'b, P: Fp6Params> Mul<&'a Fq2> for &'b Fp6<P> {
+    type Output = Fp6<P>;
+
+    fn mul(self, other: &Fq2) -> Fp6<P> {
+        Fp6 {
+            a: &self.a * other,
+            b: &self.b * other,
+            c: &self.c * other,
+            _marker: PhantomData
+        }
+    }
 }
 
 forward_ops_to_field_ops!(impl(P: Fp6Params) Fp6<P>);
