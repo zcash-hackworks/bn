@@ -4,7 +4,7 @@ use fields::fp::PrimeFieldParams;
 use fields::fp2::Fp2Params;
 use fields::fp6::Fp6Params;
 use fields::fp12::Fp12Params;
-use super::{Fr,Fq,Fq2,Fq6,Fq12,G1,G2};
+use super::{Fr,Fq,Fq2};
 use groups::*;
 
 pub struct FrParams;
@@ -63,6 +63,7 @@ impl GroupParams for G1Params {
 #[test]
 fn test_g1() {
     use groups;
+    use ::G1;
 
     groups::tests::group_trials::<G1Params>();
 
@@ -72,6 +73,7 @@ fn test_g1() {
 
 #[test]
 fn g1_test_vector() {
+    use ::G1;
     let a = G1::one() * Fr::from("19797905000333868150253315089095386158892526856493194078073564469188852136946");
     let b = G1::one() * Fr::from("2730506433347642574983433139433778984782882168213690554721050571242082865799");
     let e = &a + &b;
@@ -116,11 +118,11 @@ impl G2Params {
     pub fn twist() -> Fq2 {
         Fq2::new(Fq::from("9"), Fq::from("1"))
     }
-    pub fn twist_mul_by_q_X() -> Fq2 {
+    pub fn twist_mul_by_q_x() -> Fq2 {
         Fq2::new(Fq::from("21575463638280843010398324269430826099269044274347216827212613867836435027261"),
                  Fq::from("10307601595873709700152284273816112264069230130616436755625194854815875713954"))
     }
-    pub fn twist_mul_by_q_Y() -> Fq2 {
+    pub fn twist_mul_by_q_y() -> Fq2 {
         Fq2::new(Fq::from("2821565182194536844548159561693502659359617185244120367078079554186484126554"),
                  Fq::from("3505843767911556378687030309984248845540243509899259641013678093033130930403"))
     }
@@ -156,6 +158,7 @@ impl GroupParams for G2Params {
 #[test]
 fn test_g2() {
     use groups;
+    use ::G2;
 
     groups::tests::group_trials::<G2Params>();
 
@@ -165,6 +168,7 @@ fn test_g2() {
 
 #[test]
 fn g2_test_vector() {
+    use ::G2;
     let a = G2::one() * Fr::from("19797905000333868150253315089095386158892526856493194078073564469188852136946");
     let b = G2::one() * Fr::from("2730506433347642574983433139433778984782882168213690554721050571242082865799");   
     let e = &a + &b;
@@ -257,7 +261,7 @@ impl Fp6Params for Fq6Params {
 fn test_fq6() {
     use fields;
 
-    fields::tests::field_trials::<Fq6>();
+    fields::tests::field_trials::<::Fq6>();
 }
 
 pub struct Fq12Params;
@@ -328,13 +332,13 @@ impl Fp12Params for Fq12Params {
 fn test_fq12() {
     use fields;
 
-    fields::tests::field_trials::<Fq12>();
+    fields::tests::field_trials::<::Fq12>();
 }
 
 #[test]
 fn fq12_test_vector() {
-    let start = Fq12::new(
-        Fq6::new(
+    let start = ::Fq12::new(
+        ::Fq6::new(
             Fq2::new(
                 Fq::from("19797905000333868150253315089095386158892526856493194078073564469188852136946"),
                 Fq::from("10509658143212501778222314067134547632307419253211327938344904628569123178733")
@@ -348,7 +352,7 @@ fn fq12_test_vector() {
                 Fq::from("2730506433347642574983433139433778984782882168213690554721050571242082865799")
             )
         ),
-        Fq6::new(
+        ::Fq6::new(
             Fq2::new(
                 Fq::from("17870056122431653936196746815433147921488990391314067765563891966783088591110"),
                 Fq::from("14314041658607615069703576372547568077123863812415914883625850585470406221594")
@@ -371,7 +375,7 @@ fn fq12_test_vector() {
         next = &next * &start;
     }
 
-    let mut cpy = next.clone();
+    let cpy = next.clone();
 
     for _ in 0..10 {
         next = next.squared();
@@ -385,8 +389,8 @@ fn fq12_test_vector() {
 
     next = next.squared();
 
-    let finally = Fq12::new(
-        Fq6::new(
+    let finally = ::Fq12::new(
+        ::Fq6::new(
             Fq2::new(
                 Fq::from("18388750939593263065521177085001223024106699964957029146547831509155008229833"),
                 Fq::from("18370529854582635460997127698388761779167953912610241447912705473964014492243")
@@ -400,7 +404,7 @@ fn fq12_test_vector() {
                 Fq::from("10987494248070743195602580056085773610850106455323751205990078881956262496575")
             )
         ),
-        Fq6::new(
+        ::Fq6::new(
             Fq2::new(
                 Fq::from("5134522153456102954632718911439874984161223687865160221119284322136466794876"),
                 Fq::from("20119236909927036376726859192821071338930785378711977469360149362002019539920")

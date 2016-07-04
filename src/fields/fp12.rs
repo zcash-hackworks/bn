@@ -124,8 +124,8 @@ impl Fq12 {
 
     pub fn mul_by_024(&self,
                       ell_0: &Fq2,
-                      ell_VW: Fq2,
-                      ell_VV: Fq2) -> Fq12 {
+                      ell_vw: Fq2,
+                      ell_vv: Fq2) -> Fq12 {
         let z0 = &self.a.a;
         let z1 = &self.a.b;
         let z2 = &self.a.c;
@@ -134,8 +134,8 @@ impl Fq12 {
         let z5 = &self.b.c;
 
         let x0 = ell_0;
-        let x2 = &ell_VV;
-        let x4 = &ell_VW;
+        let x2 = &ell_vv;
+        let x4 = &ell_vw;
 
         let d0 = z0 * x0;
         let d2 = z2 * x2;

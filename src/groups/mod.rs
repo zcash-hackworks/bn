@@ -60,10 +60,10 @@ impl<P: GroupParams> Clone for Affine<P> {
 }
 
 #[derive(PartialEq, Eq)]
-pub struct ell_coeffs {
+pub struct EllCoeffs {
     pub ell_0: Fq2,
-    pub ell_VW: Fq2,
-    pub ell_VV: Fq2
+    pub ell_vw: Fq2,
+    pub ell_vv: Fq2
 }
 
 impl<P: GroupParams> Affine<P> {
@@ -103,8 +103,8 @@ impl<P: GroupParams> Affine<P> {
 impl Jacobian<G2Params> {
     pub fn mul_by_q(&self) -> Jacobian<G2Params> {
         Jacobian {
-            x: G2Params::twist_mul_by_q_X() * self.x.frobenius_map(1),
-            y: G2Params::twist_mul_by_q_Y() * self.y.frobenius_map(1),
+            x: G2Params::twist_mul_by_q_x() * self.x.frobenius_map(1),
+            y: G2Params::twist_mul_by_q_y() * self.y.frobenius_map(1),
             z: self.z.frobenius_map(1)
         }
     }
@@ -299,7 +299,7 @@ impl<P: GroupParams> Jacobian<P> {
 }
 
 impl Jacobian<G2Params> {
-    pub fn mixed_addition_step_for_flipped_miller_loop(&mut self, base: &Affine<G2Params>) -> ell_coeffs {
+    pub fn mixed_addition_step_for_flipped_miller_loop(&mut self, base: &Affine<G2Params>) -> EllCoeffs {
         let d = &self.x - &self.z * &base.get_x();
         let e = &self.y - &self.z * &base.get_y();
         let f = d.squared();
@@ -312,14 +312,14 @@ impl Jacobian<G2Params> {
         self.y = &e * (&i - &j) - &h * &self.y;
         self.z = &self.z * &h;
 
-        ell_coeffs {
+        EllCoeffs {
             ell_0: G2Params::twist() * (&e * &base.get_x() - &d * &base.get_y()),
-            ell_VV: e.neg(),
-            ell_VW: d
+            ell_vv: e.neg(),
+            ell_vw: d
         }
     }
 
-    pub fn doubling_step_for_flipped_miller_loop(&mut self, two_inv: &Fq) -> ell_coeffs {
+    pub fn doubling_step_for_flipped_miller_loop(&mut self, two_inv: &Fq) -> EllCoeffs {
         let a = &(&self.x * &self.y) * two_inv;
         let b = self.y.squared();
         let c = self.z.squared();
@@ -336,10 +336,10 @@ impl Jacobian<G2Params> {
         self.y = g.squared() - (&e_sq + &e_sq + &e_sq);
         self.z = &b * &h;
 
-        ell_coeffs {
+        EllCoeffs {
             ell_0: G2Params::twist() * &i,
-            ell_VW: h.neg(),
-            ell_VV: &j + &j + &j
+            ell_vw: h.neg(),
+            ell_vv: &j + &j + &j
         }
     }
 }

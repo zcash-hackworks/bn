@@ -2,7 +2,6 @@ use ::Fq12;
 use ::Scalar;
 use std::ops::{BitXor,Mul};
 use fields::Field;
-use std::cmp::{PartialEq, Eq};
 
 #[derive(Debug,Eq,PartialEq)]
 pub struct Gt(Fq12);
