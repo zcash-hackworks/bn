@@ -6,6 +6,7 @@ mod params;
 
 mod groups;
 
+pub use groups::Gt;
 pub use fields::fp::Fp;
 pub use fields::fp2::Fp2;
 pub use fields::fp6::Fp6;
@@ -347,11 +348,11 @@ pub fn final_exponentiation(elt: &Fq12) -> Fq12 {
     final_exponentiation_last_chunk(&final_exponentiation_first_chunk(elt))
 }
 
-pub fn pairing(p: &G1, q: &G2) -> Fq12 {
+pub fn pairing(p: &G1, q: &G2) -> Gt {
     let p = p.to_affine();
     let q = G2Precomp::new(q);
 
-    final_exponentiation(&miller_loop(&p, &q))
+    Gt::new(final_exponentiation(&miller_loop(&p, &q)))
 }
 
 #[test]
@@ -361,7 +362,7 @@ fn test_reduced_pairing() {
 
     let gt = pairing(&g1, &g2);
 
-    let expected = Fq12::new(
+    let expected = Gt::new(Fq12::new(
         Fq6::new(
             Fq2::new(Fq::from("7520311483001723614143802378045727372643587653754534704390832890681688842501"), Fq::from("20265650864814324826731498061022229653175757397078253377158157137251452249882")), 
             Fq2::new(Fq::from("11942254371042183455193243679791334797733902728447312943687767053513298221130"), Fq::from("759657045325139626991751731924144629256296901790485373000297868065176843620")), 
@@ -372,7 +373,7 @@ fn test_reduced_pairing() {
             Fq2::new(Fq::from("17897835398184801202802503586172351707502775171934235751219763553166796820753"), Fq::from("1344517825169318161285758374052722008806261739116142912817807653057880346554")), 
             Fq2::new(Fq::from("11123896897251094532909582772961906225000817992624500900708432321664085800838"), Fq::from("17453370448280081813275586256976217762629631160552329276585874071364454854650"))
         )
-    );
+    ));
 
     assert_eq!(expected, gt);
 }
@@ -390,7 +391,7 @@ fn test_binlinearity() {
         let sp = &p * &s;
         let sq = &q * &s;
 
-        let a = pairing(&p, &q).pow(&s);
+        let a = pairing(&p, &q) ^ &s;
         let b = pairing(&sp, &q);
         let c = pairing(&p, &sq);
 
@@ -399,6 +400,6 @@ fn test_binlinearity() {
 
         let t = Fr::zero().sub(&Fr::one());
 
-        assert_eq!(a.pow(&t).mul(&a), Fq12::one());
+        assert_eq!((&a ^ t) * &a, Gt::new(Fq12::one()));
     }
 }

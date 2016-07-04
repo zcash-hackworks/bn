@@ -12,6 +12,9 @@ pub mod tests;
 #[macro_use]
 mod macros;
 
+mod gt;
+pub use self::gt::Gt;
+
 pub trait GroupParams: Sized {
     type Base: Field;
 
