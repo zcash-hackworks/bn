@@ -42,7 +42,7 @@ impl<P: PrimeFieldParams> Field for Fp<P> {
         }
     }
     fn random<R: Rng>(rng: &mut R) -> Self {
-        use num::num_bigint::RandBigInt;
+        use num::bigint::RandBigInt;
         use num::Zero;
 
         Fp {
