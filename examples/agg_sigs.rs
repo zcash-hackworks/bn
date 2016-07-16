@@ -28,8 +28,8 @@ fn verify_aggregate_sig(agg_sig: &G1, msg_key_pairs: &[(&str, &G2)]) -> bool {
 fn main() {
     let rng = &mut rand::thread_rng();
 
-    const MSG: &'static str = "Hello!";
-    const MSG1: &'static str = "Hello!2";
+    const MSG1: &'static str = "Hello!";
+    const MSG2: &'static str = "Hello!2";
 
     // Generate Keys
     let alice_sk = Scalar::random(rng);
@@ -39,10 +39,10 @@ fn main() {
     let alice_pk = G2::one() * &alice_sk;
     let bob_pk = G2::one() * &bob_sk;
     // Generate Signatures
-    let msgm1 = G1::random(&mut sighash::SignatureHash::from(MSG));
+    let msgm1 = G1::random(&mut sighash::SignatureHash::from(MSG1));
     let sigm1_a = &msgm1 * &alice_sk;
 
-    let msgm2 = G1::random(&mut sighash::SignatureHash::from(MSG1));
+    let msgm2 = G1::random(&mut sighash::SignatureHash::from(MSG2));
     let sigm2_b = &msgm2 * &bob_sk;
 
     // Verify single signatures
@@ -53,7 +53,7 @@ fn main() {
     let sig_m1m2 = &sigm1_a + &sigm2_b;
 
     // Verify the Aggregate Signature
-    assert!(verify_aggregate_sig(&sig_m1m2, &[(MSG, &alice_pk), (MSG1, &bob_pk)]));
+    assert!(verify_aggregate_sig(&sig_m1m2, &[(MSG1, &alice_pk), (MSG2, &bob_pk)]));
 
     //Test duplicate messages
     //Generate bob's sig of MSG
@@ -61,6 +61,6 @@ fn main() {
 
     //Generate duplicate aggregate signature
     let sig_m1_dup = &sigm1_a + &sigm1_b;
-    assert!(verify_aggregate_sig(&sig_m1_dup, &[(MSG, &alice_pk), (MSG1, &bob_pk)])==false);
+    assert!(!verify_aggregate_sig(&sig_m1_dup, &[(MSG1, &alice_pk), (MSG1, &bob_pk)]));
 
 }
