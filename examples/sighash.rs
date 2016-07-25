@@ -29,3 +29,6 @@ impl<'a> From<&'a [u8]> for SignatureHash {
         }))
     }
 }
+
+fn main() {
+}
