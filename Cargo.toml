@@ -1,6 +1,6 @@
 [package]
 name = "bn"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sean Bowe <ewillbefull@gmail.com>"]
 description = "Pairing cryptography with the Barreto-Naehrig curve"
 keywords = ["pairing","crypto","cryptography"]
@@ -9,6 +9,8 @@ homepage = "https://github.com/zcash/bn"
 repository = "https://github.com/zcash/bn"
 license = "MIT OR Apache-2.0"
 
+[[bench]]
+name = "fp"
+
 [dependencies]
-num = "0.1.32"
 rand = "0.3.14"
