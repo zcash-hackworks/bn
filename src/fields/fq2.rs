@@ -6,7 +6,7 @@ use rand::Rng;
 fn non_residue() -> Fq {
     // (q - 1) is a quadratic nonresidue in Fq
     // 21888242871839275222246405745257275088696311157297823662689037894645226208582
-    const_fp([317583274, 1757628553, 1923792719, 2366144360, 151523889, 1373741639, 1193918714, 576313009])
+    const_fp([0x68c3488912edefaa, 0x8d087f6872aabf4f, 0x51e1a24709081231, 0x2259d6b14729c0fa])
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -63,15 +63,16 @@ impl FieldElement for Fq2 {
         }
     }
 
-    fn inverse(self) -> Self {
+    fn inverse(self) -> Option<Self> {
         // "High-Speed Software Implementation of the Optimal Ate Pairing
         // over Barreto–Naehrig Curves"; Algorithm 8
 
-        let t = (self.c0.squared() - (self.c1.squared() * non_residue())).inverse();
-
-        Fq2 {
-            c0: self.c0 * t,
-            c1: -(self.c1 * t)
+        match (self.c0.squared() - (self.c1.squared() * non_residue())).inverse() {
+            Some(t) => Some(Fq2 {
+                c0: self.c0 * t,
+                c1: -(self.c1 * t)
+            }),
+            None => None
         }
     }
 }

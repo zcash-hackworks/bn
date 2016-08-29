@@ -5,16 +5,32 @@ fn can_invert<F: FieldElement>() {
     let mut a = F::one();
 
     for _ in 0..10000 {
-        assert_eq!(a * a.inverse(), F::one());
+        assert_eq!(a * a.inverse().unwrap(), F::one());
 
         a = a + F::one();
     }
 
     a = -F::one();
     for _ in 0..10000 {
-        assert_eq!(a * a.inverse(), F::one());
+        assert_eq!(a * a.inverse().unwrap(), F::one());
 
         a = a - F::one();
+    }
+
+    assert_eq!(F::zero().inverse(), None);
+}
+
+fn rand_element_eval<F: FieldElement, R: Rng>(rng: &mut R) {
+    for _ in 0..100 {
+        let a = F::random(rng);
+        let b = F::random(rng);
+        let c = F::random(rng);
+        let d = F::random(rng);
+
+        assert_eq!(
+            (a + b) * (c + d),
+            (a * c) + (b * c) + (a * d) + (b * d)
+        );
     }
 }
 
@@ -34,6 +50,12 @@ fn rand_element_squaring<F: FieldElement, R: Rng>(rng: &mut R) {
 }
 
 fn rand_element_addition_and_negation<F: FieldElement, R: Rng>(rng: &mut R) {
+    for _ in 0..100 {
+        let a = F::random(rng);
+
+        assert_eq!(a + (-a), F::zero());
+    }
+
     for _ in 0..100 {
         let mut a = F::random(rng);
         let r = F::random(rng);
@@ -69,9 +91,9 @@ fn rand_element_addition_and_negation<F: FieldElement, R: Rng>(rng: &mut R) {
 fn rand_element_inverse<F: FieldElement, R: Rng>(rng: &mut R) {
     for _ in 0..10000 {
         let a = F::random(rng);
-        assert!(a.inverse() * a == F::one());
+        assert!(a.inverse().unwrap() * a == F::one());
         let b = F::random(rng);
-        assert_eq!((a * b) * (a.inverse()), b);
+        assert_eq!((a * b) * (a.inverse().unwrap()), b);
     }
 }
 
@@ -102,4 +124,5 @@ pub fn field_trials<F: FieldElement>() {
     rand_element_addition_and_negation::<F, StdRng>(&mut rng);
     rand_element_multiplication::<F, StdRng>(&mut rng);
     rand_element_inverse::<F, StdRng>(&mut rng);
+    rand_element_eval::<F, StdRng>(&mut rng);
 }

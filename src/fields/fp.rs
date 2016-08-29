@@ -9,7 +9,7 @@ use arith::U256;
 pub trait FpParams {
     fn name() -> &'static str;
     fn modulus() -> U256;
-    fn inv() -> u32;
+    fn inv() -> u64;
     fn rsquared() -> U256;
     fn rcubed() -> U256;
     fn one() -> U256;
@@ -69,11 +69,15 @@ impl<P: FpParams> Fp<P> {
 }
 
 impl<P: FpParams> Fp<P> {
-    /// Assumes input is mod p, not exposed publicly
-    fn new_checked(mut a: U256) -> Self {
-        a.mul(&P::rsquared(), &P::modulus(), P::inv());
+    /// Converts a U256 to an Fp so long as it's below the modulus.
+    pub fn new(mut a: U256) -> Option<Self> {
+        if a < P::modulus() {
+            a.mul(&P::rsquared(), &P::modulus(), P::inv());
 
-        Fp(a, PhantomData)
+            Some(Fp(a, PhantomData))
+        } else {
+            None
+        }
     }
 }
 
@@ -87,20 +91,22 @@ impl<P: FpParams> FieldElement for Fp<P> {
     }
     
     fn random<R: Rng>(rng: &mut R) -> Self {
-        Fp::new_checked(U256::rand(rng, &P::modulus()))
+        const_fp(U256::random(rng, &P::modulus()))
     }
 
     fn is_zero(&self) -> bool {
         self.0.is_zero()
     }
 
-    fn inverse(mut self) -> Self {
-        assert!(!self.is_zero());
+    fn inverse(mut self) -> Option<Self> {
+        if self.is_zero() {
+            None
+        } else {
+            self.0.invert(&P::modulus());
+            self.0.mul(&P::rcubed(), &P::modulus(), P::inv());
 
-        self.0.invert(&P::modulus());
-        self.0.mul(&P::rcubed(), &P::modulus(), P::inv());
-
-        self
+            Some(self)
+        }
     }
 }
 
@@ -152,29 +158,29 @@ impl FpParams for FrParams {
     #[inline]
     fn modulus() -> U256 {
         // 21888242871839275222246405745257275088548364400416034343698204186575808495617
-        [0xf0000001, 0x43e1f593, 0x79b97091, 0x2833e848, 0x8181585d, 0xb85045b6, 0xe131a029, 0x30644e72].into()
+        [0x43e1f593f0000001, 0x2833e84879b97091, 0xb85045b68181585d, 0x30644e72e131a029].into()
     }
 
     #[inline]
-    fn inv() -> u32 {
-        0xefffffff
+    fn inv() -> u64 {
+        0xc2e1f593efffffff
     }
 
     #[inline]
     fn rsquared() -> U256 {
         // 944936681149208446651664254269745548490766851729442924617792859073125903783
-        [0xae216da7, 0x1bb8e645, 0xe35c59e3, 0x53fe3ab1, 0x53bb8085, 0x8c49833d, 0x7f4e44a5, 0x0216d0b1].into()
+        [0x1bb8e645ae216da7, 0x53fe3ab1e35c59e3, 0x8c49833d53bb8085, 0x0216d0b17f4e44a5].into()
     }
 
     #[inline]
     fn rcubed() -> U256 {
         // 5866548545943845227489894872040244720403868105578784105281690076696998248512
-        [0xb4bf0040, 0x5e94d8e1, 0x1cfbb6b8, 0x2a489cbe, 0xa19fcfed, 0x893cc664, 0x7fcc657c, 0x0cf8594b].into()
+        [0x5e94d8e1b4bf0040, 0x2a489cbe1cfbb6b8, 0x893cc664a19fcfed, 0x0cf8594b7fcc657c].into()
     }
 
     #[inline]
     fn one() -> U256 {
-        [0x4ffffffb, 0xac96341c, 0x9f60cd29, 0x36fc7695, 0x7879462e, 0x666ea36f, 0x9a07df2f, 0x0e0a77c1].into()
+        [0xac96341c4ffffffb, 0x36fc76959f60cd29, 0x666ea36f7879462e, 0xe0a77c19a07df2f].into()
     }
 }
 
@@ -186,29 +192,29 @@ impl FpParams for FqParams {
     #[inline]
     fn modulus() -> U256 {
         // 21888242871839275222246405745257275088696311157297823662689037894645226208583
-        [0xd87cfd47, 0x3c208c16, 0x6871ca8d, 0x97816a91, 0x8181585d, 0xb85045b6, 0xe131a029, 0x30644e72].into()
+        [0x3c208c16d87cfd47, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029].into()
     }
 
     #[inline]
-    fn inv() -> u32 {
-        0xe4866389
+    fn inv() -> u64 {
+        0x87d20782e4866389
     }
 
     #[inline]
     fn rsquared() -> U256 {
         // 3096616502983703923843567936837374451735540968419076528771170197431451843209
-        [0x538afa89, 0xf32cfc5b, 0xd44501fb, 0xb5e71911, 0x0a417ff6, 0x47ab1eff, 0xcab8351f, 0x06d89f71].into()
+        [0xf32cfc5b538afa89, 0xb5e71911d44501fb, 0x47ab1eff0a417ff6, 0x06d89f71cab8351f].into()
     }
 
     #[inline]
     fn rcubed() -> U256 {
         // 14921786541159648185948152738563080959093619838510245177710943249661917737183
-        [0xda1530df, 0xb1cd6daf, 0xa7283db6, 0x62f210e6, 0x0ada0afb, 0xef7f0b0c, 0x2d592544, 0x20fd6e90].into()
+        [0xb1cd6dafda1530df, 0x62f210e6a7283db6, 0xef7f0b0c0ada0afb, 0x20fd6e902d592544].into()
     }
 
     #[inline]
     fn one() -> U256 {
-        [0xc58f0d9d, 0xd35d438d, 0xf5c70b3d, 0x0a78eb28, 0x7879462c, 0x666ea36f, 0x9a07df2f, 0x0e0a77c1].into()
+        [0xd35d438dc58f0d9d, 0xa78eb28f5c70b3d, 0x666ea36f7879462c, 0xe0a77c19a07df2f].into()
     }
 }
 
@@ -219,7 +225,7 @@ fn test_rsquared() {
     for _ in 0..1000 {
         let a = Fr::random(rng);
         let b: U256 = a.into();
-        let c = Fr::new_checked(b);
+        let c = Fr::new(b).unwrap();
 
         assert_eq!(a, c);
     }
@@ -227,7 +233,7 @@ fn test_rsquared() {
     for _ in 0..1000 {
         let a = Fq::random(rng);
         let b: U256 = a.into();
-        let c = Fq::new_checked(b);
+        let c = Fq::new(b).unwrap();
 
         assert_eq!(a, c);
     }

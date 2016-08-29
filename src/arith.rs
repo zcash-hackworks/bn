@@ -1,13 +1,10 @@
 use std::cmp::Ordering;
 use rand::Rng;
 
-mod primitives;
-use self::primitives::*;
-
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct U256([Digit; LIMBS]);
+pub struct U256([u64; 4]);
 
 impl Ord for U256 {
     #[inline]
@@ -25,21 +22,15 @@ impl Ord for U256 {
 }
 
 impl PartialOrd for U256 {
+    #[inline]
     fn partial_cmp(&self, other: &U256) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl From<u32> for U256 {
+impl From<[u64; 4]> for U256 {
     #[inline]
-    fn from(f: u32) -> U256 {
-        U256([f, 0, 0, 0, 0, 0, 0, 0])
-    }
-}
-
-impl From<[u32; 8]> for U256 {
-    #[inline]
-    fn from(a: [u32; 8]) -> U256 {
+    fn from(a: [u64; 4]) -> U256 {
         U256(a)
     }
 }
@@ -47,19 +38,16 @@ impl From<[u32; 8]> for U256 {
 impl U256 {
     #[inline]
     pub fn zero() -> U256 {
-        0.into()
+        [0, 0, 0, 0].into()
     }
 
     #[inline]
     pub fn one() -> U256 {
-        1.into()
+        [1, 0, 0, 0].into()
     }
 
     /// Produce a random number (mod `modulo`)
-    pub fn rand<R: Rng>(
-        rng: &mut R,
-        modulo: &U256
-    ) -> U256
+    pub fn random<R: Rng>(rng: &mut R, modulo: &U256) -> U256
     {
         let mut res;
 
@@ -94,8 +82,8 @@ impl U256 {
     {
         assert!(n < 256);
 
-        let part = n / 32;
-        let bit = n - (32 * part);
+        let part = n / 64;
+        let bit = n - (64 * part);
 
         if to {
             self.0[part] |= 1 << bit;
@@ -124,7 +112,7 @@ impl U256 {
 
     /// Multiply `self` by `other` (mod `modulo`) via the Montgomery
     /// multiplication method.
-    pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u32) {
+    pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u64) {
         mul_reduce(&mut self.0, &other.0, &modulo.0, inv);
 
         if *self >= *modulo {
@@ -221,20 +209,156 @@ impl<'a> Iterator for BitIterator<'a> {
         else {
             self.n -= 1;
 
-            let part = self.n / 32;
-            let bit = self.n - (32 * part);
+            let part = self.n / 64;
+            let bit = self.n - (64 * part);
 
             Some(self.int.0[part] & (1 << bit) > 0)
         }
     }
 }
 
+/// Divide by two
+#[inline]
+fn div2(a: &mut [u64; 4]) {
+    let mut b = 0;
+    for a in a.iter_mut().rev() {
+        let t = *a << 63;
+        *a = *a >> 1;
+        *a = *a | b;
+        b = t;
+    }
+}
+
+#[inline]
+fn split_u64(i: u64) -> (u64, u64) {
+    (i >> 32, i & 0xFFFFFFFF)
+}
+
+#[inline]
+fn combine_u64(hi: u64, lo: u64) -> u64 {
+    (hi << 32) | lo
+}
+
+#[inline]
+fn adc(a: u64, b: u64, carry: &mut u64) -> u64 {
+    let (a1, a0) = split_u64(a);
+    let (b1, b0) = split_u64(b);
+    let (c, r0) = split_u64(a0 + b0 + *carry);
+    let (c, r1) = split_u64(a1 + b1 + c);
+    *carry = c;
+
+    combine_u64(r1, r0)
+}
+
+#[inline]
+fn add_nocarry(a: &mut [u64; 4], b: &[u64; 4]) {
+    let mut carry = 0;
+
+    for (a, b) in a.into_iter().zip(b.iter()) {
+        *a = adc(*a, *b, &mut carry);
+    }
+
+    debug_assert!(0 == carry);
+}
+
+#[inline]
+fn sub_noborrow(a: &mut [u64; 4], b: &[u64; 4]) {
+    #[inline]
+    fn sbb(a: u64, b: u64, borrow: &mut u64) -> u64 {
+        let (a1, a0) = split_u64(a);
+        let (b1, b0) = split_u64(b);
+        let (b, r0) = split_u64((1 << 32) + a0 - b0 - *borrow);
+        let (b, r1) = split_u64((1 << 32) + a1 - b1 - ((b == 0) as u64));
+
+        *borrow = (b == 0) as u64;
+
+        combine_u64(r1, r0)
+    }
+
+    let mut borrow = 0;
+
+    for (a, b) in a.into_iter().zip(b.iter()) {
+        *a = sbb(*a, *b, &mut borrow);
+    }
+
+    debug_assert!(0 == borrow);
+}
+
+#[inline]
+fn mul_reduce(
+    this: &mut [u64; 4],
+    by: &[u64; 4],
+    modulus: &[u64; 4],
+    inv: u64
+)
+{
+    fn mac_digit(acc: &mut [u64], b: &[u64], c: u64)
+    {
+        #[inline]
+        fn mac_with_carry(a: u64, b: u64, c: u64, carry: &mut u64) -> u64 {
+            let (b_hi, b_lo) = split_u64(b);
+            let (c_hi, c_lo) = split_u64(c);
+
+            let (x_hi, x_lo) = split_u64(b_lo * c_lo);
+            let (y_hi, y_lo) = split_u64(b_lo * c_hi);
+            let (z_hi, z_lo) = split_u64(b_hi * c_lo);
+            let (r_hi, r_lo) = split_u64(x_hi + y_lo + z_lo);
+            let mut c0 = (r_lo << 32) | x_lo;
+            let mut c1 = (b_hi * c_hi) + r_hi + y_hi + z_hi;
+
+            let mut c = 0;
+            c0 = adc(c0, *carry, &mut c);
+            c1 = adc(c1, 0, &mut c);
+            c0 = adc(c0, a, &mut c);
+            c1 = adc(c1, 0, &mut c);
+
+            *carry = c1;
+            c0
+        }
+
+        if c == 0 {
+            return;
+        }
+
+        let mut b_iter = b.iter();
+        let mut carry = 0;
+
+        for ai in acc.iter_mut() {
+            if let Some(bi) = b_iter.next() {
+                *ai = mac_with_carry(*ai, *bi, c, &mut carry);
+            } else if carry != 0 {
+                *ai = mac_with_carry(*ai, 0, c, &mut carry);
+            } else {
+                break;
+            }
+        }
+
+        debug_assert!(carry == 0);
+    }
+
+    // The Montgomery reduction here is based on Algorithm 14.32 in
+    // Handbook of Applied Cryptography
+    // <http://cacr.uwaterloo.ca/hac/about/chap14.pdf>.
+
+    let mut res = [0; 2*4];
+    for (i, xi) in this.iter().enumerate() {
+        mac_digit(&mut res[i..], by, *xi);
+    }
+
+    for i in 0..4 {
+        let k = inv.wrapping_mul(res[i]);
+        mac_digit(&mut res[i..], modulus, k);
+    }
+
+    this.copy_from_slice(&res[4..]);
+}
+
 #[test]
 fn setting_bits() {
     let rng = &mut ::rand::thread_rng();
-    let modulo = U256([0xffffffff; LIMBS]);
+    let modulo = U256([0xffffffffffffffff; 4]);
 
-    let a = U256::rand(rng, &modulo);
+    let a = U256::random(rng, &modulo);
     let mut e = U256::zero();
     for (i, b) in a.bits().enumerate() {
         e.set_bit(255 - i, b);
