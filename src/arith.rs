@@ -69,13 +69,10 @@ impl U256 {
     }
 
     pub fn is_zero(&self) -> bool {
-        for a in self.0.iter() {
-            if *a != 0 {
-                return false;
-            }
-        }
-
-        return true;
+        self.0[0] == 0 &&
+        self.0[1] == 0 &&
+        self.0[2] == 0 &&
+        self.0[3] == 0
     }
 
     pub fn set_bit(&mut self, n: usize, to: bool)
@@ -220,38 +217,41 @@ impl<'a> Iterator for BitIterator<'a> {
 /// Divide by two
 #[inline]
 fn div2(a: &mut [u64; 4]) {
-    let mut b = 0;
-    for a in a.iter_mut().rev() {
-        let t = *a << 63;
-        *a = *a >> 1;
-        *a = *a | b;
-        b = t;
-    }
+    let mut t = a[3] << 63;
+    a[3] = a[3] >> 1;
+    let b = a[2] << 63;
+    a[2] >>= 1;
+    a[2] |= t;
+    t = a[1] << 63;
+    a[1] >>= 1;
+    a[1] |= b;
+    a[0] >>= 1;
+    a[0] |= t;
 }
 
-#[inline]
+#[inline(always)]
 fn split_u64(i: u64) -> (u64, u64) {
     (i >> 32, i & 0xFFFFFFFF)
 }
 
-#[inline]
+#[inline(always)]
 fn combine_u64(hi: u64, lo: u64) -> u64 {
     (hi << 32) | lo
 }
 
 #[inline]
-fn adc(a: u64, b: u64, carry: &mut u64) -> u64 {
-    let (a1, a0) = split_u64(a);
-    let (b1, b0) = split_u64(b);
-    let (c, r0) = split_u64(a0 + b0 + *carry);
-    let (c, r1) = split_u64(a1 + b1 + c);
-    *carry = c;
-
-    combine_u64(r1, r0)
-}
-
-#[inline]
 fn add_nocarry(a: &mut [u64; 4], b: &[u64; 4]) {
+    #[inline]
+    fn adc(a: u64, b: u64, carry: &mut u64) -> u64 {
+        let (a1, a0) = split_u64(a);
+        let (b1, b0) = split_u64(b);
+        let (c, r0) = split_u64(a0 + b0 + *carry);
+        let (c, r1) = split_u64(a1 + b1 + c);
+        *carry = c;
+
+        combine_u64(r1, r0)
+    }
+
     let mut carry = 0;
 
     for (a, b) in a.into_iter().zip(b.iter()) {
@@ -299,21 +299,16 @@ fn mul_reduce(
             let (b_hi, b_lo) = split_u64(b);
             let (c_hi, c_lo) = split_u64(c);
 
-            let (x_hi, x_lo) = split_u64(b_lo * c_lo);
+            let (a_hi, a_lo) = split_u64(a);
+            let (carry_hi, carry_lo) = split_u64(*carry);
+            let (x_hi, x_lo) = split_u64(b_lo * c_lo + a_lo + carry_lo);
             let (y_hi, y_lo) = split_u64(b_lo * c_hi);
             let (z_hi, z_lo) = split_u64(b_hi * c_lo);
-            let (r_hi, r_lo) = split_u64(x_hi + y_lo + z_lo);
-            let mut c0 = (r_lo << 32) | x_lo;
-            let mut c1 = (b_hi * c_hi) + r_hi + y_hi + z_hi;
+            let (r_hi, r_lo) = split_u64(x_hi + y_lo + z_lo + a_hi + carry_hi);
 
-            let mut c = 0;
-            c0 = adc(c0, *carry, &mut c);
-            c1 = adc(c1, 0, &mut c);
-            c0 = adc(c0, a, &mut c);
-            c1 = adc(c1, 0, &mut c);
+            *carry = (b_hi * c_hi) + r_hi + y_hi + z_hi;
 
-            *carry = c1;
-            c0
+            combine_u64(r_lo, x_lo)
         }
 
         if c == 0 {
