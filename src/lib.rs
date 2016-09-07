@@ -1,4 +1,6 @@
 extern crate rand;
+extern crate rustc_serialize;
+extern crate byteorder;
 
 mod arith;
 mod fields;

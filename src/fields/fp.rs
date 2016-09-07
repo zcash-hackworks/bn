@@ -4,6 +4,8 @@ use std::fmt;
 use std::marker::PhantomData;
 use super::FieldElement;
 
+use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
+
 use arith::U256;
 
 pub trait FpParams {
@@ -42,6 +44,20 @@ impl<P: FpParams> From<Fp<P>> for U256 {
 #[inline]
 pub fn const_fp<P: FpParams, I: Into<U256>>(i: I) -> Fp<P> {
     Fp(i.into(), PhantomData)
+}
+
+impl<P: FpParams> Encodable for Fp<P> {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        let normalized = U256::from(*self);
+
+        normalized.encode(s)
+    }
+}
+
+impl<P: FpParams> Decodable for Fp<P> {
+    fn decode<S: Decoder>(s: &mut S) -> Result<Fp<P>, S::Error> {
+        Fp::new(try!(U256::decode(s))).ok_or_else(|| s.error("integer is not less than modulus"))
+    }
 }
 
 impl<P: FpParams> Fp<P> {

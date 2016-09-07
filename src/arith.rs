@@ -1,10 +1,48 @@
 use std::cmp::Ordering;
 use rand::Rng;
 
+use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
+use byteorder::{ByteOrder, BigEndian};
+
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct U256([u64; 4]);
+
+impl Encodable for U256 {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        let mut buf = [0; 32];
+
+        BigEndian::write_u64(&mut buf[0..], self.0[3]);
+        BigEndian::write_u64(&mut buf[8..], self.0[2]);
+        BigEndian::write_u64(&mut buf[16..], self.0[1]);
+        BigEndian::write_u64(&mut buf[24..], self.0[0]);
+
+        for i in 0..32 {
+            try!(s.emit_u8(buf[i]));
+        }
+
+        Ok(())
+    }
+}
+
+impl Decodable for U256 {
+    fn decode<S: Decoder>(s: &mut S) -> Result<U256, S::Error> {
+        let mut buf = [0; 32];
+
+        for i in 0..32 {
+            buf[i] = try!(s.read_u8());
+        }
+
+        let mut n = [0; 4];
+        n[3] = BigEndian::read_u64(&buf[0..]);
+        n[2] = BigEndian::read_u64(&buf[8..]);
+        n[1] = BigEndian::read_u64(&buf[16..]);
+        n[0] = BigEndian::read_u64(&buf[24..]);
+
+        Ok(n.into())
+    }
+}
 
 impl Ord for U256 {
     #[inline]

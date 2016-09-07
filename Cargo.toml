@@ -14,3 +14,10 @@ name = "fp"
 
 [dependencies]
 rand = "0.3.14"
+rustc-serialize = "0.3"
+byteorder = "0.5"
+
+[dev-dependencies.bincode]
+version = "0.6.0"
+default-features = false
+features = ["rustc-serialize"]
