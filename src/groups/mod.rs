@@ -40,7 +40,8 @@ pub struct G<P: GroupParams> {
 
 pub struct AffineG<P: GroupParams> {
     x: P::Base,
-    y: P::Base
+    y: P::Base,
+    infinity: bool
 }
 
 impl<P: GroupParams> fmt::Debug for G<P> {
@@ -90,44 +91,64 @@ impl<P: GroupParams> PartialEq for G<P> {
 impl<P: GroupParams> Eq for G<P> { }
 
 impl<P: GroupParams> G<P> {
-    fn to_affine(&self) -> Option<AffineG<P>> {
+    fn to_affine(&self) -> AffineG<P> {
         if self.z.is_zero() {
-            None
+            AffineG {
+                x: P::Base::zero(),
+                y: P::Base::one(),
+                infinity: true
+            }
         } else {
             let zinv = self.z.inverse().unwrap();
             let zinv_squared = zinv.squared();
 
-            Some(AffineG {
+            AffineG {
                 x: self.x * zinv_squared,
-                y: self.y * (zinv_squared * zinv)
-            })
+                y: self.y * (zinv_squared * zinv),
+                infinity: false
+            }
         }
     }
 }
 
 impl<P: GroupParams> AffineG<P> {
+    fn zero() -> Self {
+        AffineG {
+            x: P::Base::zero(),
+            y: P::Base::one(),
+            infinity: true
+        }
+    }
+
     fn to_jacobian(&self) -> G<P> {
         G {
             x: self.x,
             y: self.y,
-            z: P::Base::one()
+            z: if self.infinity {
+                P::Base::zero()
+            } else {
+                P::Base::one()
+            }
         }
     }
 }
 
 impl<P: GroupParams> Encodable for G<P> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        match self.to_affine() {
-            None => {
-                let l: u8 = 0;
-                try!(l.encode(s));
-            },
-            Some(p) => {
-                let l: u8 = 4;
-                try!(l.encode(s));
-                try!(p.x.encode(s));
-                try!(p.y.encode(s));
-            }
+        self.to_affine().encode(s)
+    }
+}
+
+impl<P: GroupParams> Encodable for AffineG<P> {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        if self.infinity {
+            let l: u8 = 0;
+            try!(l.encode(s));
+        } else {
+            let l: u8 = 4;
+            try!(l.encode(s));
+            try!(self.x.encode(s));
+            try!(self.y.encode(s));
         }
 
         Ok(())
@@ -136,19 +157,25 @@ impl<P: GroupParams> Encodable for G<P> {
 
 impl<P: GroupParams> Decodable for G<P> {
     fn decode<S: Decoder>(s: &mut S) -> Result<G<P>, S::Error> {
+        Ok(try!(AffineG::decode(s)).to_jacobian())
+    }
+}
+
+impl<P: GroupParams> Decodable for AffineG<P> {
+    fn decode<S: Decoder>(s: &mut S) -> Result<AffineG<P>, S::Error> {
         let l = try!(u8::decode(s));
         if l == 0 {
-            Ok(G::zero())
+            Ok(AffineG::zero())
         } else if l == 4 {
             let x = try!(P::Base::decode(s));
             let y = try!(P::Base::decode(s));
 
             // y^2 = x^3 + b
             if y.squared() == (x.squared() * x) + P::coeff_b() {
-                Ok(G {
+                Ok(AffineG {
                     x: x,
                     y: y,
-                    z: P::Base::one()
+                    infinity: false
                 })
             } else {
                 Err(s.error("point is not on the curve"))
@@ -356,12 +383,12 @@ fn test_g2() {
 fn test_affine_jacobian_conversion() {
     let rng = &mut ::rand::thread_rng();
 
-    assert!(G1::zero().to_affine().is_none());
-    assert!(G2::zero().to_affine().is_none());
+    assert!(G1::zero().to_affine().infinity);
+    assert!(G2::zero().to_affine().infinity);
 
     for _ in 0..1000 {
         let a = G1::one() * Fr::random(rng);
-        let b = a.to_affine().unwrap();
+        let b = a.to_affine();
         let c = b.to_jacobian();
 
         assert_eq!(a, c);
@@ -369,7 +396,7 @@ fn test_affine_jacobian_conversion() {
 
     for _ in 0..1000 {
         let a = G2::one() * Fr::random(rng);
-        let b = a.to_affine().unwrap();
+        let b = a.to_affine();
         let c = b.to_jacobian();
 
         assert_eq!(a, c);
