@@ -2,6 +2,8 @@ use fields::{FieldElement, const_fp, Fq};
 use std::ops::{Add, Sub, Mul, Neg};
 use rand::Rng;
 
+use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
+
 #[inline]
 fn non_residue() -> Fq {
     // (q - 1) is a quadratic nonresidue in Fq
@@ -15,11 +17,38 @@ pub struct Fq2 {
     c1: Fq
 }
 
+impl Encodable for Fq2 {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        // TODO: multiply c0 and c1 during encoding
+        try!(self.c0.encode(s));
+        try!(self.c1.encode(s));
+
+        Ok(())
+    }
+}
+
+impl Decodable for Fq2 {
+    fn decode<S: Decoder>(s: &mut S) -> Result<Fq2, S::Error> {
+        // TODO: divrem to get c0 and c1
+        let c0 = try!(Fq::decode(s));
+        let c1 = try!(Fq::decode(s));
+
+        Ok(Fq2::new(c0, c1))
+    }
+}
+
 impl Fq2 {
     pub fn new(c0: Fq, c1: Fq) -> Self {
         Fq2 {
             c0: c0,
             c1: c1
+        }
+    }
+
+    pub fn scale(&self, by: Fq) -> Self {
+        Fq2 {
+            c0: self.c0 * by,
+            c1: self.c1 * by
         }
     }
 }
