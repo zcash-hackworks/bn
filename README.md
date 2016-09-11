@@ -23,7 +23,7 @@ extern crate bn;
 
 ## API
 
-* `Scalar` is an element of F<sub>r</sub>
+* `Fr` is an element of F<sub>r</sub>
 * `G1` is a point on the BN curve E/Fq : y^2 = x^3 + b
 * `G2` is a point on the twisted BN curve E'/Fq2 : y^2 = x^3 + b/xi
 * `Gt` is a group element (written multiplicatively) obtained with the `pairing` function over `G1` and `G2`.
@@ -38,19 +38,19 @@ In a typical Diffie-Hellman key exchange, relying on ECDLP, a three-party key ex
 
 ```rust
 // Generate private keys
-let alice_sk = Scalar::random(rng);
-let bob_sk = Scalar::random(rng);
-let carol_sk = Scalar::random(rng);
+let alice_sk = Fr::random(rng);
+let bob_sk = Fr::random(rng);
+let carol_sk = Fr::random(rng);
 
 // Generate public keys in G1 and G2
-let (alice_pk1, alice_pk2) = (G1::one() * &alice_sk, G2::one() * &alice_sk);
-let (bob_pk1, bob_pk2) = (G1::one() * &bob_sk, G2::one() * &bob_sk);
-let (carol_pk1, carol_pk2) = (G1::one() * &carol_sk, G2::one() * &carol_sk);
+let (alice_pk1, alice_pk2) = (G1::one() * alice_sk, G2::one() * alice_sk);
+let (bob_pk1, bob_pk2) = (G1::one() * bob_sk, G2::one() * bob_sk);
+let (carol_pk1, carol_pk2) = (G1::one() * carol_sk, G2::one() * carol_sk);
 
 // Each party computes the shared secret
-let alice_ss = pairing(&bob_pk1, &carol_pk2) ^ &alice_sk;
-let bob_ss = pairing(&carol_pk1, &alice_pk2) ^ &bob_sk;
-let carol_ss = pairing(&alice_pk1, &bob_pk2) ^ &carol_sk;
+let alice_ss = pairing(&bob_pk1, &carol_pk2).pow(alice_sk);
+let bob_ss = pairing(&carol_pk1, &alice_pk2).pow(bob_sk);
+let carol_ss = pairing(&alice_pk1, &bob_pk2).pow(carol_sk);
 
 assert!(alice_ss == bob_ss && bob_ss == carol_ss);
 ```

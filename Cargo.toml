@@ -10,7 +10,7 @@ repository = "https://github.com/zcash/bn"
 license = "MIT OR Apache-2.0"
 
 [[bench]]
-name = "fp"
+name = "api"
 
 [dependencies]
 rand = "0.3.14"

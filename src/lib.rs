@@ -6,65 +6,129 @@ mod arith;
 mod fields;
 mod groups;
 
-pub use arith::U256;
-pub use fields::{Fq, Fr, Fq2, Fq6, Fq12, FieldElement};
-pub use groups::{G1, G2, GroupElement};
+use fields::FieldElement;
+use groups::GroupElement;
 
-pub fn pairing(p: &G1, q: &G2) -> Fq12 {
-	match (p.to_affine(), q.to_affine()) {
-		(None, _) | (_, None) => Fq12::one(),
-		(Some(p), Some(q)) => {
-			q.precompute().miller_loop(&p).final_exponentiation().expect("miller loop cannot produce zero")
-		}
-	}
+use std::ops::{Add, Sub, Mul, Neg};
+use rand::Rng;
+
+#[derive(Copy, Clone, PartialEq, Eq, RustcDecodable, RustcEncodable)]
+pub struct Fr(fields::Fr);
+
+impl Fr {
+    pub fn zero() -> Self { Fr(fields::Fr::zero()) }
+    pub fn one() -> Self { Fr(fields::Fr::one()) }
+    pub fn random<R: Rng>(rng: &mut R) -> Self { Fr(fields::Fr::random(rng)) }
+    pub fn pow(&self, exp: Fr) -> Self { Fr(self.0.pow(exp.0)) }
+    pub fn from_str(s: &str) -> Option<Self> { fields::Fr::from_str(s).map(|e| Fr(e)) }
+    pub fn inverse(&self) -> Option<Self> { self.0.inverse().map(|e| Fr(e)) }
 }
 
-#[test]
-fn test_reduced_pairing() {
-    let g1 = G1::one() * Fr::from_str("18097487326282793650237947474982649264364522469319914492172746413872781676").unwrap();
-    let g2 = G2::one() * Fr::from_str("20390255904278144451778773028944684152769293537511418234311120800877067946").unwrap();
+impl Add<Fr> for Fr {
+    type Output = Fr;
 
-    let gt = pairing(&g1, &g2);
-
-    let expected = Fq12::new(
-        Fq6::new(
-            Fq2::new(Fq::from_str("7520311483001723614143802378045727372643587653754534704390832890681688842501").unwrap(), Fq::from_str("20265650864814324826731498061022229653175757397078253377158157137251452249882").unwrap()),
-            Fq2::new(Fq::from_str("11942254371042183455193243679791334797733902728447312943687767053513298221130").unwrap(), Fq::from_str("759657045325139626991751731924144629256296901790485373000297868065176843620").unwrap()),
-            Fq2::new(Fq::from_str("16045761475400271697821392803010234478356356448940805056528536884493606035236").unwrap(), Fq::from_str("4715626119252431692316067698189337228571577552724976915822652894333558784086").unwrap())
-        ),
-        Fq6::new(
-            Fq2::new(Fq::from_str("14901948363362882981706797068611719724999331551064314004234728272909570402962").unwrap(), Fq::from_str("11093203747077241090565767003969726435272313921345853819385060670210834379103").unwrap()),
-            Fq2::new(Fq::from_str("17897835398184801202802503586172351707502775171934235751219763553166796820753").unwrap(), Fq::from_str("1344517825169318161285758374052722008806261739116142912817807653057880346554").unwrap()),
-            Fq2::new(Fq::from_str("11123896897251094532909582772961906225000817992624500900708432321664085800838").unwrap(), Fq::from_str("17453370448280081813275586256976217762629631160552329276585874071364454854650").unwrap())
-        )
-    );
-
-    assert_eq!(expected, gt);
+    fn add(self, other: Fr) -> Fr { Fr(self.0 + other.0) }
 }
 
-#[test]
-fn test_binlinearity() {
-    use rand::{SeedableRng,StdRng};
-    let seed: [usize; 4] = [103245, 191922, 1293, 192103];
-    let mut rng = StdRng::from_seed(&seed);
+impl Sub<Fr> for Fr {
+    type Output = Fr;
 
-    for _ in 0..50 {
-        let p = G1::random(&mut rng);
-        let q = G2::random(&mut rng);
-        let s = Fr::random(&mut rng);
-        let sp = p * s;
-        let sq = q * s;
+    fn sub(self, other: Fr) -> Fr { Fr(self.0 - other.0) }
+}
 
-        let a = pairing(&p, &q).pow(s);
-        let b = pairing(&sp, &q);
-        let c = pairing(&p, &sq);
+impl Neg for Fr {
+    type Output = Fr;
 
-        assert_eq!(a, b);
-        assert_eq!(b, c);
+    fn neg(self) -> Fr { Fr(-self.0) }
+}
 
-        let t = -Fr::one();
+impl Mul for Fr {
+    type Output = Fr;
 
-        assert!(a != Fq12::one());
-        assert_eq!((a.pow(t)) * a, Fq12::one());
-    }
+    fn mul(self, other: Fr) -> Fr { Fr(self.0 * other.0) }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, RustcDecodable, RustcEncodable)]
+pub struct G1(groups::G1);
+
+impl G1 {
+    pub fn zero() -> Self { G1(groups::G1::zero()) }
+    pub fn one() -> Self { G1(groups::G1::one()) }
+    pub fn random<R: Rng>(rng: &mut R) -> Self { G1(groups::G1::random(rng)) }
+}
+
+impl Add<G1> for G1 {
+    type Output = G1;
+
+    fn add(self, other: G1) -> G1 { G1(self.0 + other.0) }
+}
+
+impl Sub<G1> for G1 {
+    type Output = G1;
+
+    fn sub(self, other: G1) -> G1 { G1(self.0 - other.0) }
+}
+
+impl Neg for G1 {
+    type Output = G1;
+
+    fn neg(self) -> G1 { G1(-self.0) }
+}
+
+impl Mul<Fr> for G1 {
+    type Output = G1;
+
+    fn mul(self, other: Fr) -> G1 { G1(self.0 * other.0) }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, RustcDecodable, RustcEncodable)]
+pub struct G2(groups::G2);
+
+impl G2 {
+    pub fn zero() -> Self { G2(groups::G2::zero()) }
+    pub fn one() -> Self { G2(groups::G2::one()) }
+    pub fn random<R: Rng>(rng: &mut R) -> Self { G2(groups::G2::random(rng)) }
+}
+
+impl Add<G2> for G2 {
+    type Output = G2;
+
+    fn add(self, other: G2) -> G2 { G2(self.0 + other.0) }
+}
+
+impl Sub<G2> for G2 {
+    type Output = G2;
+
+    fn sub(self, other: G2) -> G2 { G2(self.0 - other.0) }
+}
+
+impl Neg for G2 {
+    type Output = G2;
+
+    fn neg(self) -> G2 { G2(-self.0) }
+}
+
+impl Mul<Fr> for G2 {
+    type Output = G2;
+
+    fn mul(self, other: Fr) -> G2 { G2(self.0 * other.0) }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct Gt(fields::Fq12);
+
+impl Gt {
+    pub fn one() -> Self { Gt(fields::Fq12::one()) }
+    pub fn pow(&self, exp: Fr) -> Self { Gt(self.0.pow(exp.0)) }
+    pub fn inverse(&self) -> Self { Gt(self.0.inverse().unwrap()) }
+}
+
+impl Mul<Gt> for Gt {
+    type Output = Gt;
+
+    fn mul(self, other: Gt) -> Gt { Gt(self.0 * other.0) }
+}
+
+pub fn pairing(p: G1, q: G2) -> Gt {
+    Gt(groups::pairing(&p.0, &q.0))
 }

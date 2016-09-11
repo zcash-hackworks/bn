@@ -100,10 +100,7 @@ impl Fq12 {
     }
 
     pub fn unitary_inverse(&self) -> Fq12 {
-         Fq12 {
-            c0: self.c0,
-            c1: -self.c1
-        }
+        Fq12::new(self.c0, -self.c1)
     }
 
     pub fn mul_by_024(&self,
