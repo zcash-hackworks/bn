@@ -13,11 +13,11 @@ license = "MIT OR Apache-2.0"
 name = "api"
 
 [dependencies]
-rand = "0.3.14"
-rustc-serialize = "0.3"
-byteorder = "0.5"
+rand = "~0.3.14"
+rustc-serialize = "~0.3.19"
+byteorder = "~0.5.3"
 
 [dev-dependencies.bincode]
-version = "0.6.0"
+version = "~0.6.0"
 default-features = false
 features = ["rustc-serialize"]
