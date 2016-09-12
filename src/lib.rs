@@ -50,7 +50,7 @@ impl Mul for Fr {
     fn mul(self, other: Fr) -> Fr { Fr(self.0 * other.0) }
 }
 
-pub trait Group: Copy + Clone + PartialEq + Eq + Sized + Add<Self> + Sub<Self> + Neg + Mul<Fr> {
+pub trait Group: 'static + Send + Copy + Clone + PartialEq + Eq + Sized + Add<Self, Output=Self> + Sub<Self, Output=Self> + Neg<Output=Self> + Mul<Fr, Output=Self> {
     fn zero() -> Self;
     fn one() -> Self;
     fn random<R: Rng>(rng: &mut R) -> Self;
