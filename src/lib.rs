@@ -13,6 +13,7 @@ use std::ops::{Add, Sub, Mul, Neg};
 use rand::Rng;
 
 #[derive(Copy, Clone, PartialEq, Eq, RustcDecodable, RustcEncodable)]
+#[repr(C)]
 pub struct Fr(fields::Fr);
 
 impl Fr {
@@ -22,6 +23,7 @@ impl Fr {
     pub fn pow(&self, exp: Fr) -> Self { Fr(self.0.pow(exp.0)) }
     pub fn from_str(s: &str) -> Option<Self> { fields::Fr::from_str(s).map(|e| Fr(e)) }
     pub fn inverse(&self) -> Option<Self> { self.0.inverse().map(|e| Fr(e)) }
+    pub fn is_zero(&self) -> bool { self.0.is_zero() }
 }
 
 impl Add<Fr> for Fr {
@@ -48,13 +50,22 @@ impl Mul for Fr {
     fn mul(self, other: Fr) -> Fr { Fr(self.0 * other.0) }
 }
 
+pub trait Group: Copy + Clone + PartialEq + Eq + Sized + Add<Self> + Sub<Self> + Neg + Mul<Fr> {
+    fn zero() -> Self;
+    fn one() -> Self;
+    fn random<R: Rng>(rng: &mut R) -> Self;
+    fn is_zero(&self) -> bool;
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, RustcDecodable, RustcEncodable)]
+#[repr(C)]
 pub struct G1(groups::G1);
 
-impl G1 {
-    pub fn zero() -> Self { G1(groups::G1::zero()) }
-    pub fn one() -> Self { G1(groups::G1::one()) }
-    pub fn random<R: Rng>(rng: &mut R) -> Self { G1(groups::G1::random(rng)) }
+impl Group for G1 {
+    fn zero() -> Self { G1(groups::G1::zero()) }
+    fn one() -> Self { G1(groups::G1::one()) }
+    fn random<R: Rng>(rng: &mut R) -> Self { G1(groups::G1::random(rng)) }
+    fn is_zero(&self) -> bool { self.0.is_zero() }
 }
 
 impl Add<G1> for G1 {
@@ -82,12 +93,14 @@ impl Mul<Fr> for G1 {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, RustcDecodable, RustcEncodable)]
+#[repr(C)]
 pub struct G2(groups::G2);
 
-impl G2 {
-    pub fn zero() -> Self { G2(groups::G2::zero()) }
-    pub fn one() -> Self { G2(groups::G2::one()) }
-    pub fn random<R: Rng>(rng: &mut R) -> Self { G2(groups::G2::random(rng)) }
+impl Group for G2 {
+    fn zero() -> Self { G2(groups::G2::zero()) }
+    fn one() -> Self { G2(groups::G2::one()) }
+    fn random<R: Rng>(rng: &mut R) -> Self { G2(groups::G2::random(rng)) }
+    fn is_zero(&self) -> bool { self.0.is_zero() }
 }
 
 impl Add<G2> for G2 {
@@ -115,6 +128,7 @@ impl Mul<Fr> for G2 {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[repr(C)]
 pub struct Gt(fields::Fq12);
 
 impl Gt {

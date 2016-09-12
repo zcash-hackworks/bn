@@ -17,6 +17,7 @@ pub trait FpParams {
     fn one() -> U256;
 }
 
+#[repr(C)]
 pub struct Fp<P: FpParams>(U256, PhantomData<P>);
 impl<P: FpParams> Copy for Fp<P> { }
 impl<P: FpParams> Clone for Fp<P> {
