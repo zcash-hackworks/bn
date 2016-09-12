@@ -24,6 +24,7 @@ fn frobenius_coeffs_c1(power: usize) -> Fq2 {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(C)]
 pub struct Fq12 {
     c0: Fq6,
     c1: Fq6

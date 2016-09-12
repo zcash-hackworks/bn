@@ -20,6 +20,7 @@ pub fn fq2_nonresidue() -> Fq2 {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(C)]
 pub struct Fq2 {
     c0: Fq,
     c1: Fq

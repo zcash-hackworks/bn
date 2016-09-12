@@ -32,6 +32,7 @@ pub trait GroupParams: Sized {
     fn coeff_b() -> Self::Base;
 }
 
+#[repr(C)]
 pub struct G<P: GroupParams> {
     x: P::Base,
     y: P::Base,
