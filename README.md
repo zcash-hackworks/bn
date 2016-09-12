@@ -12,7 +12,7 @@ Add the `bn` crate to your dependencies in `Cargo.toml`...
 
 ```toml
 [dependencies]
-bn = "0.2.1"
+bn = "0.2.2"
 ```
 
 ...and add an `extern crate` declaration to your crate root:
