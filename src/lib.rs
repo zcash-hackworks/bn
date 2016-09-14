@@ -55,6 +55,7 @@ pub trait Group:
         rustc_serialize::Decodable +
         'static +
         Send +
+        Sync +
         Copy +
         Clone +
         PartialEq +
