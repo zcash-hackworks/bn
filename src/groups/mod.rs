@@ -1,5 +1,5 @@
 use std::ops::{Add,Sub,Neg,Mul};
-use fields::{FieldElement, Fq, Fq2, Fq12, Fr, const_fp, fq2_nonresidue};
+use fields::{FieldElement, Fq, Fq2, Fq12, Fr, const_fq, fq2_nonresidue};
 use arith::U256;
 use std::fmt;
 use rand::Rng;
@@ -334,13 +334,13 @@ impl GroupParams for G1Params {
     fn one() -> G<Self> {
         G {
             x: Fq::one(),
-            y: const_fp([0xa6ba871b8b1e1b3a, 0x14f1d651eb8e167b, 0xccdd46def0f28c58, 0x1c14ef83340fbe5e]),
+            y: const_fq([0xa6ba871b8b1e1b3a, 0x14f1d651eb8e167b, 0xccdd46def0f28c58, 0x1c14ef83340fbe5e]),
             z: Fq::one()
         }
     }
 
     fn coeff_b() -> Fq {
-        const_fp([0x7a17caa950ad28d7, 0x1f6ac17ae15521b9, 0x334bea4e696bd284, 0x2a1f6744ce179d8e])
+        const_fq([0x7a17caa950ad28d7, 0x1f6ac17ae15521b9, 0x334bea4e696bd284, 0x2a1f6744ce179d8e])
     }
 }
 
@@ -356,12 +356,12 @@ impl GroupParams for G2Params {
     fn one() -> G<Self> {
         G {
             x: Fq2::new(
-                const_fp([0x8e83b5d102bc2026, 0xdceb1935497b0172, 0xfbb8264797811adf, 0x19573841af96503b]),
-                const_fp([0xafb4737da84c6140, 0x6043dd5a5802d8c4, 0x09e950fc52a02f86, 0x14fef0833aea7b6b])
+                const_fq([0x8e83b5d102bc2026, 0xdceb1935497b0172, 0xfbb8264797811adf, 0x19573841af96503b]),
+                const_fq([0xafb4737da84c6140, 0x6043dd5a5802d8c4, 0x09e950fc52a02f86, 0x14fef0833aea7b6b])
             ),
             y: Fq2::new(
-                const_fp([0x619dfa9d886be9f6, 0xfe7fd297f59e9b78, 0xff9e1a62231b7dfe, 0x28fd7eebae9e4206]),
-                const_fp([0x64095b56c71856ee, 0xdc57f922327d3cbb, 0x55f935be33351076, 0x0da4a0e693fd6482])
+                const_fq([0x619dfa9d886be9f6, 0xfe7fd297f59e9b78, 0xff9e1a62231b7dfe, 0x28fd7eebae9e4206]),
+                const_fq([0x64095b56c71856ee, 0xdc57f922327d3cbb, 0x55f935be33351076, 0x0da4a0e693fd6482])
             ),
             z: Fq2::one()
         }
@@ -369,8 +369,8 @@ impl GroupParams for G2Params {
 
     fn coeff_b() -> Fq2 {
         Fq2::new(
-            const_fp([0x3bf938e377b802a8, 0x020b1b273633535d, 0x26b7edf049755260, 0x2514c6324384a86d]),
-            const_fp([0x38e7ecccd1dcff67, 0x65f0b37d93ce0d3e, 0xd749d0dd22ac00aa, 0x0141b9ce4a688d4d])
+            const_fq([0x3bf938e377b802a8, 0x020b1b273633535d, 0x26b7edf049755260, 0x2514c6324384a86d]),
+            const_fq([0x38e7ecccd1dcff67, 0x65f0b37d93ce0d3e, 0xd749d0dd22ac00aa, 0x0141b9ce4a688d4d])
         )
     }
 }
@@ -421,27 +421,27 @@ fn twist() -> Fq2 {
 
 #[inline]
 fn two_inv() -> Fq {
-    const_fp([9781510331150239090, 15059239858463337189, 10331104244869713732, 2249375503248834476])
+    const_fq([9781510331150239090, 15059239858463337189, 10331104244869713732, 2249375503248834476])
 }
 
 #[inline]
 fn ate_loop_count() -> U256 {
-    [0x9d797039be763ba8, 0x0000000000000001, 0x0000000000000000, 0x0000000000000000].into()
+    U256([0x9d797039be763ba8, 0x0000000000000001, 0x0000000000000000, 0x0000000000000000])
 }
 
 #[inline]
 fn twist_mul_by_q_x() -> Fq2 {
     Fq2::new(
-        const_fp([13075984984163199792, 3782902503040509012, 8791150885551868305, 1825854335138010348]),
-        const_fp([7963664994991228759, 12257807996192067905, 13179524609921305146, 2767831111890561987])
+        const_fq([13075984984163199792, 3782902503040509012, 8791150885551868305, 1825854335138010348]),
+        const_fq([7963664994991228759, 12257807996192067905, 13179524609921305146, 2767831111890561987])
     )
 }
 
 #[inline]
 fn twist_mul_by_q_y() -> Fq2 {
     Fq2::new(
-        const_fp([16482010305593259561, 13488546290961988299, 3578621962720924518, 2681173117283399901]),
-        const_fp([11661927080404088775, 553939530661941723, 7860678177968807019, 3208568454732775116])
+        const_fq([16482010305593259561, 13488546290961988299, 3578621962720924518, 2681173117283399901]),
+        const_fq([11661927080404088775, 553939530661941723, 7860678177968807019, 3208568454732775116])
     )
 }
 

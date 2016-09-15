@@ -7,7 +7,8 @@ use byteorder::{ByteOrder, BigEndian};
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct U256([u64; 4]);
+#[repr(C)]
+pub struct U256(pub [u64; 4]);
 
 impl Encodable for U256 {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
@@ -40,7 +41,7 @@ impl Decodable for U256 {
         n[1] = BigEndian::read_u64(&buf[16..]);
         n[0] = BigEndian::read_u64(&buf[24..]);
 
-        Ok(n.into())
+        Ok(U256(n))
     }
 }
 
@@ -66,22 +67,15 @@ impl PartialOrd for U256 {
     }
 }
 
-impl From<[u64; 4]> for U256 {
-    #[inline]
-    fn from(a: [u64; 4]) -> U256 {
-        U256(a)
-    }
-}
-
 impl U256 {
     #[inline]
     pub fn zero() -> U256 {
-        [0, 0, 0, 0].into()
+        U256([0, 0, 0, 0])
     }
 
     #[inline]
     pub fn one() -> U256 {
-        [1, 0, 0, 0].into()
+        U256([1, 0, 0, 0])
     }
 
     /// Produce a random number (mod `modulo`)
