@@ -121,6 +121,18 @@ impl U256 {
         }
     }
 
+    pub fn get_bit(&self, n: usize) -> Option<bool>
+    {
+        if n >= 256 {
+            None
+        } else {
+            let part = n / 64;
+            let bit = n - (64 * part);
+
+            Some(self.0[part] & (1 << bit) > 0)
+        }
+    }
+
     /// Add `other` to `self` (mod `modulo`)
     pub fn add(&mut self, other: &U256, modulo: &U256) {
         add_nocarry(&mut self.0, &other.0);
@@ -238,10 +250,7 @@ impl<'a> Iterator for BitIterator<'a> {
         else {
             self.n -= 1;
 
-            let part = self.n / 64;
-            let bit = self.n - (64 * part);
-
-            Some(self.int.0[part] & (1 << bit) > 0)
+            self.int.get_bit(self.n)
         }
     }
 }
