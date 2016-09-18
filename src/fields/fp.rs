@@ -68,6 +68,12 @@ macro_rules! field_impl {
                     None
                 }
             }
+
+            /// Returns the modulus
+            #[inline]
+            pub fn modulus() -> U256 {
+                U256($modulus)
+            }
         }
 
         impl FieldElement for $name {

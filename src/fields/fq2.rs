@@ -2,6 +2,8 @@ use fields::{FieldElement, const_fq, Fq};
 use std::ops::{Add, Sub, Mul, Neg};
 use rand::Rng;
 
+use arith::{U256, U512};
+
 use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
 #[inline]
@@ -28,21 +30,25 @@ pub struct Fq2 {
 
 impl Encodable for Fq2 {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        // TODO: multiply c0 and c1 during encoding
-        try!(self.c0.encode(s));
-        try!(self.c1.encode(s));
+        let c1: U256 = self.c1.into();
+        let c0: U256 = self.c0.into();
 
-        Ok(())
+        U512::from(&c1, &c0, &Fq::modulus()).encode(s)
     }
 }
 
 impl Decodable for Fq2 {
     fn decode<S: Decoder>(s: &mut S) -> Result<Fq2, S::Error> {
-        // TODO: divrem to get c0 and c1
-        let c0 = try!(Fq::decode(s));
-        let c1 = try!(Fq::decode(s));
+        let combined = try!(U512::decode(s));
 
-        Ok(Fq2::new(c0, c1))
+        match combined.divrem(&Fq::modulus()) {
+            Some((c1, c0)) => {
+                Ok(Fq2::new(Fq::new(c0).unwrap(), Fq::new(c1).unwrap()))
+            },
+            None => {
+                Err(s.error("integer not less than modulus squared"))
+            }
+        }
     }
 }
 
