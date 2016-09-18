@@ -78,6 +78,15 @@ impl U512 {
             (q, r)
         }
     }
+
+    pub fn interpret(buf: &[u8; 64]) -> U512 {
+        let mut n = [0; 8];
+        for (l, i) in (0..8).rev().zip((0..8).map(|i| i * 8)) {
+            n[l] = BigEndian::read_u64(&buf[i..]);
+        }
+
+        U512(n)
+    }
 }
 
 impl Encodable for U512 {
@@ -104,12 +113,7 @@ impl Decodable for U512 {
             buf[i] = try!(s.read_u8());
         }
 
-        let mut n = [0; 8];
-        for (l, i) in (0..8).rev().zip((0..8).map(|i| i * 8)) {
-            n[l] = BigEndian::read_u64(&buf[i..]);
-        }
-
-        Ok(U512(n))
+        Ok(U512::interpret(&buf))
     }
 }
 
