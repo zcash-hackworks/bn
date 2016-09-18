@@ -17,6 +17,7 @@ pub struct U256(pub [u64; 4]);
 pub struct U512(pub [u64; 8]);
 
 impl U512 {
+    /// Multiplies c1 by modulo, adds c0.
     pub fn from(c1: &U256, c0: &U256, modulo: &U256) -> U512 {
         let mut res = [0; 8];
 
@@ -53,9 +54,11 @@ impl U512 {
         }
     }
 
-    pub fn divrem(&self, modulo: &U256) -> Option<(U256, U256)>
+    /// Divides self by modulo, returning remainder and, if
+    /// possible, a quotient smaller than the modulus.
+    pub fn divrem(&self, modulo: &U256) -> (Option<U256>, U256)
     {
-        let mut q = U256::zero();
+        let mut q = Some(U256::zero());
         let mut r = U256::zero();
 
         for i in (0..512).rev() {
@@ -63,16 +66,16 @@ impl U512 {
             assert!(r.set_bit(0, self.get_bit(i).unwrap()));
             if &r >= modulo {
                 sub_noborrow(&mut r.0, &modulo.0);
-                if !q.set_bit(i, true) {
-                    return None
+                if q.is_some() && !q.as_mut().unwrap().set_bit(i, true) {
+                    q = None
                 }
             }
         }
 
-        if &q >= modulo {
-            None
+        if q.is_some() && (q.as_ref().unwrap() >= modulo) {
+            (None, r)
         } else {
-            Some((q, r))
+            (q, r)
         }
     }
 }
@@ -529,10 +532,10 @@ fn testing_divrem() {
 
         let c1q_plus_c0 = U512::from(&c1, &c0, &modulo);
 
-        let (new_c1, new_c0) = c1q_plus_c0.divrem(&modulo).unwrap();
+        let (new_c1, new_c0) = c1q_plus_c0.divrem(&modulo);
 
+        assert!(c1 == new_c1.unwrap());
         assert!(c0 == new_c0);
-        assert!(c1 == new_c1);
     }
 
     {
@@ -548,8 +551,8 @@ fn testing_divrem() {
             0
         ]);
 
-        let (c1, c0) = a.divrem(&modulo).unwrap();
-        assert_eq!(c1, U256::one());
+        let (c1, c0) = a.divrem(&modulo);
+        assert_eq!(c1.unwrap(), U256::one());
         assert_eq!(c0, U256::zero());
     }
 
@@ -566,8 +569,8 @@ fn testing_divrem() {
             0x0925c4b8763cbf9c
         ]);
 
-        let (c1, c0) = a.divrem(&modulo).unwrap();
-        assert_eq!(c1, U256([0x3c208c16d87cfd46, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029]));
+        let (c1, c0) = a.divrem(&modulo);
+        assert_eq!(c1.unwrap(), U256([0x3c208c16d87cfd46, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029]));
         assert_eq!(c0, U256([0x3c208c16d87cfd46, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029]));
     }
 
@@ -584,9 +587,9 @@ fn testing_divrem() {
             0x0925c4b8763cbf9c
         ]);
 
-        let (c1, c0) = a.divrem(&modulo).unwrap();
+        let (c1, c0) = a.divrem(&modulo);
 
-        assert_eq!(c1, U256([0x3c208c16d87cfd46, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029]));
+        assert_eq!(c1.unwrap(), U256([0x3c208c16d87cfd46, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029]));
         assert_eq!(c0, U256([0x3c208c16d87cfd45, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029]));
     }
 
@@ -603,7 +606,9 @@ fn testing_divrem() {
             0xffffffffffffffff
         ]);
 
-        assert!(a.divrem(&modulo).is_none());
+        let (c1, c0) = a.divrem(&modulo);
+        assert!(c1.is_none());
+        assert_eq!(c0, U256([0xf32cfc5b538afa88, 0xb5e71911d44501fb, 0x47ab1eff0a417ff6, 0x06d89f71cab8351f]));
     }
 
     {
@@ -619,11 +624,33 @@ fn testing_divrem() {
             0x0925c4b8763cbf9c
         ]);
 
-        assert!(a.divrem(&modulo).is_none());
+        let (c1, c0) = a.divrem(&modulo);
+        assert!(c1.is_none());
+        assert_eq!(c0, U256::zero());
     }
 
     {
-        // Modulus masked off is valid
+        // Modulus squared plus one should fail
+        let a = U512([
+            0x3b5458a2275d69b2,
+            0xa602072d09eac101,
+            0x4a50189c6d96cadc,
+            0x04689e957a1242c8,
+            0x26edfa5c34c6b38d,
+            0xb00b855116375606,
+            0x599a6f7c0348d21c,
+            0x0925c4b8763cbf9c
+        ]);
+
+        let (c1, c0) = a.divrem(&modulo);
+        assert!(c1.is_none());
+        assert_eq!(c0, U256::one());
+    }
+
+    {
+        let modulo = U256([0x43e1f593f0000001, 0x2833e84879b97091, 0xb85045b68181585d, 0x30644e72e131a029]);
+
+        // Fr modulus masked off is valid
         let a = U512([
             0xffffffffffffffff,
             0xffffffffffffffff,
@@ -635,9 +662,9 @@ fn testing_divrem() {
             0x07ffffffffffffff
         ]);
 
-        let (c1, c0) = a.divrem(&modulo).unwrap();
+        let (c1, c0) = a.divrem(&modulo);
 
-        assert!(c1 < modulo);
+        assert!(c1.unwrap() < modulo);
         assert!(c0 < modulo);
     }
 }
