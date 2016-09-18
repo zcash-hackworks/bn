@@ -43,6 +43,12 @@ impl U512 {
         U512(res)
     }
 
+    /// Get a random U512
+    pub fn random<R: Rng>(rng: &mut R) -> U512
+    {
+        U512(rng.gen())
+    }
+
     pub fn get_bit(&self, n: usize) -> Option<bool> {
         if n >= 512 {
             None
@@ -62,6 +68,8 @@ impl U512 {
         let mut r = U256::zero();
 
         for i in (0..512).rev() {
+            // NB: modulo's first two bits are always unset
+            // so this will never destroy information
             mul2(&mut r.0);
             assert!(r.set_bit(0, self.get_bit(i).unwrap()));
             if &r >= modulo {
@@ -186,23 +194,7 @@ impl U256 {
     /// Produce a random number (mod `modulo`)
     pub fn random<R: Rng>(rng: &mut R, modulo: &U256) -> U256
     {
-        let mut res;
-
-        loop {
-            res = U256(rng.gen());
-
-            for (i, x) in modulo.bits().enumerate() {
-                if !x {
-                    assert!(res.set_bit(255 - i, false));
-                } else {
-                    break;
-                }
-            }
-
-            if &res < modulo { break; }
-        }
-
-        res
+        U512::random(rng).divrem(modulo).1
     }
 
     pub fn is_zero(&self) -> bool {
