@@ -79,14 +79,13 @@ impl U512 {
 
 impl Encodable for U256 {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        let mut buf = [0; 32];
+        let mut buf = [0; (4 * 8)];
 
-        BigEndian::write_u64(&mut buf[0..], self.0[3]);
-        BigEndian::write_u64(&mut buf[8..], self.0[2]);
-        BigEndian::write_u64(&mut buf[16..], self.0[1]);
-        BigEndian::write_u64(&mut buf[24..], self.0[0]);
+        for (l, i) in (0..4).rev().zip((0..4).map(|i| i * 8)) {
+            BigEndian::write_u64(&mut buf[i..], self.0[l]);
+        }
 
-        for i in 0..32 {
+        for i in 0..(4 * 8) {
             try!(s.emit_u8(buf[i]));
         }
 
@@ -96,17 +95,16 @@ impl Encodable for U256 {
 
 impl Decodable for U256 {
     fn decode<S: Decoder>(s: &mut S) -> Result<U256, S::Error> {
-        let mut buf = [0; 32];
+        let mut buf = [0; (4 * 8)];
 
-        for i in 0..32 {
+        for i in 0..(4 * 8) {
             buf[i] = try!(s.read_u8());
         }
 
         let mut n = [0; 4];
-        n[3] = BigEndian::read_u64(&buf[0..]);
-        n[2] = BigEndian::read_u64(&buf[8..]);
-        n[1] = BigEndian::read_u64(&buf[16..]);
-        n[0] = BigEndian::read_u64(&buf[24..]);
+        for (l, i) in (0..4).rev().zip((0..4).map(|i| i * 8)) {
+            n[l] = BigEndian::read_u64(&buf[i..]);
+        }
 
         Ok(U256(n))
     }
