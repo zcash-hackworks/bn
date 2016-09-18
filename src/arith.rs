@@ -88,7 +88,7 @@ impl U256 {
 
             for (i, x) in modulo.bits().enumerate() {
                 if !x {
-                    res.set_bit(255 - i, false);
+                    assert!(res.set_bit(255 - i, false));
                 } else {
                     break;
                 }
@@ -107,17 +107,21 @@ impl U256 {
         self.0[3] == 0
     }
 
-    pub fn set_bit(&mut self, n: usize, to: bool)
+    pub fn set_bit(&mut self, n: usize, to: bool) -> bool
     {
-        assert!(n < 256);
-
-        let part = n / 64;
-        let bit = n - (64 * part);
-
-        if to {
-            self.0[part] |= 1 << bit;
+        if n >= 256 {
+            false
         } else {
-            self.0[part] &= !(1 << bit);
+            let part = n / 64;
+            let bit = n - (64 * part);
+
+            if to {
+                self.0[part] |= 1 << bit;
+            } else {
+                self.0[part] &= !(1 << bit);
+            }
+
+            true
         }
     }
 
@@ -397,7 +401,7 @@ fn setting_bits() {
     let a = U256::random(rng, &modulo);
     let mut e = U256::zero();
     for (i, b) in a.bits().enumerate() {
-        e.set_bit(255 - i, b);
+        assert!(e.set_bit(255 - i, b));
     }
 
     assert_eq!(a, e);
