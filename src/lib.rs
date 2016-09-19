@@ -24,6 +24,9 @@ impl Fr {
     pub fn from_str(s: &str) -> Option<Self> { fields::Fr::from_str(s).map(|e| Fr(e)) }
     pub fn inverse(&self) -> Option<Self> { self.0.inverse().map(|e| Fr(e)) }
     pub fn is_zero(&self) -> bool { self.0.is_zero() }
+    pub fn interpret(buf: &[u8; 64]) -> Fr {
+        Fr(fields::Fr::interpret(buf))
+    }
 }
 
 impl Add<Fr> for Fr {

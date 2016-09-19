@@ -1,10 +1,12 @@
 # bn [![Crates.io](https://img.shields.io/crates/v/bn.svg)](https://crates.io/crates/bn) [![Build status](https://api.travis-ci.org/zcash/bn.svg)](https://travis-ci.org/zcash/bn)
 
-This is a [pairing cryptography](https://en.wikipedia.org/wiki/Pairing-based_cryptography) library written in pure Rust. It makes use of the Barreto-Naehrig (BN) curve construction from [[BCGTV13]](http://eprint.iacr.org/2013/507) to provide two cyclic groups **G<sub>1</sub>** and **G<sub>2</sub>**, with an efficient bilinear pairing:
+This is a [pairing cryptography](https://en.wikipedia.org/wiki/Pairing-based_cryptography) library written in pure Rust. It makes use of the Barreto-Naehrig (BN) curve construction from [[BCTV2015]](https://eprint.iacr.org/2013/879.pdf) to provide two cyclic groups **G<sub>1</sub>** and **G<sub>2</sub>**, with an efficient bilinear pairing:
 
 *e: G<sub>1</sub> × G<sub>2</sub> → G<sub>T</sub>*
 
-**This code is still in early development and should not be used in production software.**
+## Security warnings
+
+This library, like other pairing cryptography libraries implementing this construction, is not resistant to side-channel attacks.
 
 ## Usage
 
@@ -12,7 +14,7 @@ Add the `bn` crate to your dependencies in `Cargo.toml`...
 
 ```toml
 [dependencies]
-bn = "0.3.0"
+bn = "0.4.0"
 ```
 
 ...and add an `extern crate` declaration to your crate root:

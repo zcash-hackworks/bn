@@ -4,7 +4,7 @@ use super::FieldElement;
 
 use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
-use arith::U256;
+use arith::{U512, U256};
 
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
@@ -67,6 +67,16 @@ macro_rules! field_impl {
                 } else {
                     None
                 }
+            }
+
+            pub fn interpret(buf: &[u8; 64]) -> Self {
+                $name::new(U512::interpret(buf).divrem(&U256($modulus)).1).unwrap()
+            }
+
+            /// Returns the modulus
+            #[inline]
+            pub fn modulus() -> U256 {
+                U256($modulus)
             }
         }
 
