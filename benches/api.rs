@@ -2,8 +2,45 @@
 extern crate test;
 extern crate rand;
 extern crate bn;
+extern crate bincode;
 
 use bn::*;
+use bincode::SizeLimit::Infinite;
+use bincode::rustc_serialize::{encode, decode};
+
+#[bench]
+fn g1_deserialization(b: &mut test::Bencher) {
+    const SAMPLES: usize = 1000;
+
+    let rng = &mut rand::thread_rng();
+
+    let serialized: Vec<_> = (0..SAMPLES).map(|_| encode(&G1::random(rng), Infinite).unwrap()).collect();
+
+    let mut ctr = 0;
+
+    b.iter(|| {
+        ctr += 1;
+
+        decode::<G1>(&serialized[ctr % SAMPLES]).unwrap()
+    });
+}
+
+#[bench]
+fn g2_deserialization(b: &mut test::Bencher) {
+    const SAMPLES: usize = 1000;
+
+    let rng = &mut rand::thread_rng();
+
+    let serialized: Vec<_> = (0..SAMPLES).map(|_| encode(&G2::random(rng), Infinite).unwrap()).collect();
+
+    let mut ctr = 0;
+
+    b.iter(|| {
+        ctr += 1;
+
+        decode::<G2>(&serialized[ctr % SAMPLES]).unwrap()
+    });
+}
 
 #[bench]
 fn fr_addition(b: &mut test::Bencher) {
