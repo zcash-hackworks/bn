@@ -112,6 +112,11 @@ impl<P: GroupParams> G<P> {
     pub fn to_affine(&self) -> Option<AffineG<P>> {
         if self.z.is_zero() {
             None
+        } else if self.z == P::Base::one() {
+            Some(AffineG {
+                x: self.x,
+                y: self.y
+            })
         } else {
             let zinv = self.z.inverse().unwrap();
             let zinv_squared = zinv.squared();
