@@ -8,272 +8,153 @@ use bn::*;
 use bincode::SizeLimit::Infinite;
 use bincode::rustc_serialize::{encode, decode};
 
-#[bench]
-fn g1_deserialization(b: &mut test::Bencher) {
-    const SAMPLES: usize = 1000;
+const SAMPLES: usize = 30;
 
-    let rng = &mut rand::thread_rng();
+macro_rules! benchmark(
+    ($name:ident, $input:ident($rng:ident) = $pre:expr; $post:expr) => (
+        #[bench]
+        fn $name(b: &mut test::Bencher) {
+            let $rng = &mut rand::thread_rng();
+            let $input: Vec<_> = (0..SAMPLES).map(|_| $pre).collect();
 
-    let serialized: Vec<_> = (0..SAMPLES).map(|_| encode(&G1::random(rng), Infinite).unwrap()).collect();
+            b.bench_n(SAMPLES as u64, |b| {
+                let mut c = 0;
 
-    let mut ctr = 0;
+                b.iter(|| {
+                    c += 1;
 
-    b.iter(|| {
-        ctr += 1;
+                    let $input = &$input[c % SAMPLES];
 
-        decode::<G1>(&serialized[ctr % SAMPLES]).unwrap()
-    });
-}
+                    $post
+                })
+            })
+        }
+    )
+);
 
-#[bench]
-fn g2_deserialization(b: &mut test::Bencher) {
-    const SAMPLES: usize = 1000;
+benchmark!(g1_serialization,
+           input(rng) = G1::random(rng);
 
-    let rng = &mut rand::thread_rng();
+           encode(input, Infinite).unwrap()
+);
 
-    let serialized: Vec<_> = (0..SAMPLES).map(|_| encode(&G2::random(rng), Infinite).unwrap()).collect();
+benchmark!(g1_serialization_normalized,
+           input(rng) = {let mut tmp = G1::random(rng); tmp.normalize(); tmp};
 
-    let mut ctr = 0;
+           encode(input, Infinite).unwrap()
+);
 
-    b.iter(|| {
-        ctr += 1;
+benchmark!(g2_serialization,
+           input(rng) = G2::random(rng);
 
-        decode::<G2>(&serialized[ctr % SAMPLES]).unwrap()
-    });
-}
+           encode(input, Infinite).unwrap()
+);
 
-#[bench]
-fn fr_addition(b: &mut test::Bencher) {
-    const SAMPLES: usize = 1000;
+benchmark!(g2_serialization_normalized,
+           input(rng) = {let mut tmp = G2::random(rng); tmp.normalize(); tmp};
 
-    let rng = &mut rand::thread_rng();
+           encode(input, Infinite).unwrap()
+);
 
-    let v1: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
+benchmark!(g1_deserialization,
+           input(rng) = {encode(&G1::random(rng), Infinite).unwrap()};
 
-    let mut ctr = 0;
+           decode::<G1>(input).unwrap()
+);
 
-    b.iter(|| {
-        ctr += 1;
+benchmark!(g2_deserialization,
+           input(rng) = {encode(&G2::random(rng), Infinite).unwrap()};
 
-        v1[ctr % SAMPLES] + v2[ctr % SAMPLES]
-    });
-}
+           decode::<G2>(input).unwrap()
+);
 
-#[bench]
-fn fr_subtraction(b: &mut test::Bencher) {
-    const SAMPLES: usize = 1000;
+benchmark!(fr_addition,
+           input(rng) = (Fr::random(rng), Fr::random(rng));
 
-    let rng = &mut rand::thread_rng();
+           input.0 + input.1
+);
 
-    let v1: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
+benchmark!(fr_subtraction,
+           input(rng) = (Fr::random(rng), Fr::random(rng));
 
-    let mut ctr = 0;
+           input.0 - input.1
+);
 
-    b.iter(|| {
-        ctr += 1;
+benchmark!(fr_multiplication,
+           input(rng) = (Fr::random(rng), Fr::random(rng));
 
-        v1[ctr % SAMPLES] - v2[ctr % SAMPLES]
-    });
-}
+           input.0 * input.1
+);
 
-#[bench]
-fn fr_multiplication(b: &mut test::Bencher) {
-    const SAMPLES: usize = 1000;
+benchmark!(fr_inverses,
+           input(rng) = Fr::random(rng);
 
-    let rng = &mut rand::thread_rng();
+           input.inverse()
+);
 
-    let v1: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
+benchmark!(g1_addition,
+           input(rng) = (G1::random(rng), G1::random(rng));
 
-    let mut ctr = 0;
+           input.0 + input.1
+);
 
-    b.iter(|| {
-        ctr += 1;
+benchmark!(g1_subtraction,
+           input(rng) = (G1::random(rng), G1::random(rng));
 
-        v1[ctr % SAMPLES] * v2[ctr % SAMPLES]
-    });
-}
+           input.0 - input.1
+);
 
-#[bench]
-fn fr_inverses(b: &mut test::Bencher) {
-	const SAMPLES: usize = 1000;
+benchmark!(g1_scalar_multiplication,
+           input(rng) = (G1::random(rng), Fr::random(rng));
 
-    let rng = &mut rand::thread_rng();
+           input.0 * input.1
+);
 
-    let v1: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
+benchmark!(g2_addition,
+           input(rng) = (G2::random(rng), G2::random(rng));
 
-    let mut ctr = 0;
+           input.0 + input.1
+);
 
-    b.iter(|| {
-        ctr += 1;
+benchmark!(g2_subtraction,
+           input(rng) = (G2::random(rng), G2::random(rng));
 
-        v1[ctr % SAMPLES].inverse()
-    });
-}
+           input.0 - input.1
+);
 
-#[bench]
-fn g1_addition(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
+benchmark!(g2_scalar_multiplication,
+           input(rng) = (G2::random(rng), Fr::random(rng));
 
-    let rng = &mut rand::thread_rng();
+           input.0 * input.1
+);
 
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G1::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| G1::random(rng)).collect();
+benchmark!(fq12_scalar_multiplication,
+           input(rng) = {
+               let g1_1 = G1::random(rng);
+               let g2_1 = G2::random(rng);
 
-    let mut ctr = 0;
+               let g1_2 = G1::random(rng);
+               let g2_2 = G2::random(rng);
 
-    b.iter(|| {
-        ctr += 1;
+               (pairing(g1_1, g2_1), pairing(g1_2, g2_2))
+           };
 
-        v1[ctr % SAMPLES] + v2[ctr % SAMPLES]
-    });
-}
+           input.0 * input.1
+);
 
-#[bench]
-fn g1_subtraction(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
+benchmark!(fq12_exponentiation,
+           input(rng) = ({
+               let g1 = G1::random(rng);
+               let g2 = G2::random(rng);
 
-    let rng = &mut rand::thread_rng();
+               pairing(g1, g2)
+           }, Fr::random(rng));
 
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G1::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| G1::random(rng)).collect();
+           input.0.pow(input.1)
+);
 
-    let mut ctr = 0;
+benchmark!(perform_pairing,
+           input(rng) = (G1::random(rng), G2::random(rng));
 
-    b.iter(|| {
-        ctr += 1;
-
-        v1[ctr % SAMPLES] - v2[ctr % SAMPLES]
-    });
-}
-
-#[bench]
-fn g1_scalar_multiplication(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
-
-    let rng = &mut rand::thread_rng();
-
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G1::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
-
-    let mut ctr = 0;
-
-    b.iter(|| {
-        ctr += 1;
-
-        v1[ctr % SAMPLES] * v2[ctr % SAMPLES]
-    });
-}
-
-#[bench]
-fn g2_addition(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
-
-    let rng = &mut rand::thread_rng();
-
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G2::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| G2::random(rng)).collect();
-
-    let mut ctr = 0;
-
-    b.iter(|| {
-        ctr += 1;
-
-        v1[ctr % SAMPLES] + v2[ctr % SAMPLES]
-    });
-}
-
-#[bench]
-fn g2_subtraction(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
-
-    let rng = &mut rand::thread_rng();
-
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G2::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| G2::random(rng)).collect();
-
-    let mut ctr = 0;
-
-    b.iter(|| {
-        ctr += 1;
-
-        v1[ctr % SAMPLES] - v2[ctr % SAMPLES]
-    });
-}
-
-#[bench]
-fn g2_scalar_multiplication(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
-
-    let rng = &mut rand::thread_rng();
-
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G2::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
-
-    let mut ctr = 0;
-
-    b.iter(|| {
-        ctr += 1;
-
-        v1[ctr % SAMPLES] * v2[ctr % SAMPLES]
-    });
-}
-
-#[bench]
-fn fq12_scalar_multiplication(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
-
-    let rng = &mut rand::thread_rng();
-
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G1::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| G2::random(rng)).collect();
-    let v3: Vec<_> = (0..SAMPLES).map(|i| pairing(v1[i], v2[i])).collect();
-
-    let mut ctr = 0;
-
-    b.iter(|| {
-        ctr += 1;
-
-        v3[(ctr + SAMPLES/50) % SAMPLES] * v3[ctr % SAMPLES]
-    });
-}
-
-#[bench]
-fn fq12_exponentiation(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
-
-    let rng = &mut rand::thread_rng();
-
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G1::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| G2::random(rng)).collect();
-    let v3: Vec<_> = (0..SAMPLES).map(|i| pairing(v1[i], v2[i])).collect();
-    let v4: Vec<_> = (0..SAMPLES).map(|_| Fr::random(rng)).collect();
-
-    let mut ctr = 0;
-
-    b.iter(|| {
-        ctr += 1;
-
-        v3[ctr % SAMPLES].pow(v4[ctr % SAMPLES])
-    });
-}
-
-#[bench]
-fn perform_pairing(b: &mut test::Bencher) {
-    const SAMPLES: usize = 100;
-
-    let rng = &mut rand::thread_rng();
-
-    let v1: Vec<_> = (0..SAMPLES).map(|_| G1::random(rng)).collect();
-    let v2: Vec<_> = (0..SAMPLES).map(|_| G2::random(rng)).collect();
-
-    let mut ctr = 0;
-
-    b.iter(|| {
-        ctr += 1;
-
-        pairing(v1[ctr % SAMPLES], v2[ctr % SAMPLES])
-    });
-}
+           pairing(input.0, input.1)
+);

@@ -73,6 +73,7 @@ pub trait Group:
     fn one() -> Self;
     fn random<R: Rng>(rng: &mut R) -> Self;
     fn is_zero(&self) -> bool;
+    fn normalize(&mut self);
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, RustcDecodable, RustcEncodable)]
@@ -84,6 +85,14 @@ impl Group for G1 {
     fn one() -> Self { G1(groups::G1::one()) }
     fn random<R: Rng>(rng: &mut R) -> Self { G1(groups::G1::random(rng)) }
     fn is_zero(&self) -> bool { self.0.is_zero() }
+    fn normalize(&mut self) {
+        let new = match self.0.to_affine() {
+            Some(a) => a,
+            None => return
+        };
+
+        self.0 = new.to_jacobian();
+    }
 }
 
 impl Add<G1> for G1 {
@@ -119,6 +128,14 @@ impl Group for G2 {
     fn one() -> Self { G2(groups::G2::one()) }
     fn random<R: Rng>(rng: &mut R) -> Self { G2(groups::G2::random(rng)) }
     fn is_zero(&self) -> bool { self.0.is_zero() }
+    fn normalize(&mut self) {
+        let new = match self.0.to_affine() {
+            Some(a) => a,
+            None => return
+        };
+
+        self.0 = new.to_jacobian();
+    }
 }
 
 impl Add<G2> for G2 {
