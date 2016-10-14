@@ -130,7 +130,7 @@ impl<P: GroupParams> G<P> {
 }
 
 impl<P: GroupParams> AffineG<P> {
-    fn to_jacobian(&self) -> G<P> {
+    pub fn to_jacobian(&self) -> G<P> {
         G {
             x: self.x,
             y: self.y,
