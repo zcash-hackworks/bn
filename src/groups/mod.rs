@@ -30,6 +30,7 @@ pub trait GroupParams: Sized {
     fn name() -> &'static str;
     fn one() -> G<Self>;
     fn coeff_b() -> Self::Base;
+    fn check_order() -> bool { false }
 }
 
 #[repr(C)]
@@ -181,6 +182,18 @@ impl<P: GroupParams> Decodable for AffineG<P> {
 
         // y^2 = x^3 + b
         if y.squared() == (x.squared() * x) + P::coeff_b() {
+            if P::check_order() {
+                let p: G<P> = G {
+                    x: x,
+                    y: y,
+                    z: P::Base::one()
+                };
+
+                if (p * (-Fr::one())) + p != G::zero() {
+                    return Err(s.error("point is not in the subgroup"))
+                }
+            }
+
             Ok(AffineG {
                 x: x,
                 y: y
@@ -378,6 +391,8 @@ impl GroupParams for G2Params {
             const_fq([0x38e7ecccd1dcff67, 0x65f0b37d93ce0d3e, 0xd749d0dd22ac00aa, 0x0141b9ce4a688d4d])
         )
     }
+
+    fn check_order() -> bool { true }
 }
 
 pub type G2 = G<G2Params>;
