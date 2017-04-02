@@ -315,10 +315,14 @@ impl<P: GroupParams> Neg for G<P> {
     type Output = G<P>;
 
     fn neg(self) -> G<P> {
-        G {
-            x: self.x,
-            y: -self.y,
-            z: self.z
+        if self.is_zero() {
+            self
+        } else {
+            G {
+                x: self.x,
+                y: -self.y,
+                z: self.z
+            }
         }
     }
 }
