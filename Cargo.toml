@@ -1,6 +1,6 @@
 [package]
 name = "bn"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["Sean Bowe <ewillbefull@gmail.com>"]
 description = "Pairing cryptography with the Barreto-Naehrig curve"
 keywords = ["pairing","crypto","cryptography"]
