@@ -821,3 +821,12 @@ fn test_binlinearity() {
         assert_eq!((a.pow(t)) * a, Fq12::one());
     }
 }
+
+#[test]
+fn test_y_at_point_at_infinity() {
+    assert!(G1::zero().y == Fq::one());
+    assert!((-G1::zero()).y == Fq::one());
+
+    assert!(G2::zero().y == Fq2::one());
+    assert!((-G2::zero()).y == Fq2::one());
+}
