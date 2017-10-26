@@ -172,6 +172,19 @@ impl Gt {
     pub fn inverse(&self) -> Self { Gt(self.0.inverse().unwrap()) }
 }
 
+pub trait SerializableGt:
+        rustc_serialize::Encodable +
+        rustc_serialize::Decodable +
+        'static +
+        Copy +
+        Clone +
+        PartialEq +
+        Eq
+{
+}
+
+impl SerializableGt for Gt {}
+
 impl Mul<Gt> for Gt {
     type Output = Gt;
 
