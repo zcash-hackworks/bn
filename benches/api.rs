@@ -1,12 +1,12 @@
 #![feature(test)]
-extern crate test;
-extern crate rand;
-extern crate bn;
 extern crate bincode;
+extern crate bn;
+extern crate rand;
+extern crate test;
 
-use bn::*;
+use bincode::rustc_serialize::{decode, encode};
 use bincode::SizeLimit::Infinite;
-use bincode::rustc_serialize::{encode, decode};
+use bn::*;
 
 const SAMPLES: usize = 30;
 

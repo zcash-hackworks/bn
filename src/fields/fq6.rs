@@ -1,41 +1,91 @@
-use fields::{FieldElement, Fq, Fq2, const_fq};
-use std::ops::{Add, Sub, Mul, Neg};
+use fields::{const_fq, FieldElement, Fq, Fq2};
 use rand::Rng;
+use std::ops::{Add, Mul, Neg, Sub};
 
 fn frobenius_coeffs_c1(n: usize) -> Fq2 {
     match n % 6 {
         0 => Fq2::one(),
         1 => Fq2::new(
-            const_fq([13075984984163199792, 3782902503040509012, 8791150885551868305, 1825854335138010348]),
-            const_fq([7963664994991228759, 12257807996192067905, 13179524609921305146, 2767831111890561987])
+            const_fq([
+                13075984984163199792,
+                3782902503040509012,
+                8791150885551868305,
+                1825854335138010348,
+            ]),
+            const_fq([
+                7963664994991228759,
+                12257807996192067905,
+                13179524609921305146,
+                2767831111890561987,
+            ]),
         ),
         2 => Fq2::new(
-            const_fq([3697675806616062876, 9065277094688085689, 6918009208039626314, 2775033306905974752]),
-            Fq::zero()
+            const_fq([
+                3697675806616062876,
+                9065277094688085689,
+                6918009208039626314,
+                2775033306905974752,
+            ]),
+            Fq::zero(),
         ),
         3 => Fq2::new(
-            const_fq([14532872967180610477, 12903226530429559474, 1868623743233345524, 2316889217940299650]),
-            const_fq([12447993766991532972, 4121872836076202828, 7630813605053367399, 740282956577754197])
+            const_fq([
+                14532872967180610477,
+                12903226530429559474,
+                1868623743233345524,
+                2316889217940299650,
+            ]),
+            const_fq([
+                12447993766991532972,
+                4121872836076202828,
+                7630813605053367399,
+                740282956577754197,
+            ]),
         ),
-        _ => unimplemented!()
+        _ => unimplemented!(),
     }
 }
 fn frobenius_coeffs_c2(n: usize) -> Fq2 {
     match n % 6 {
         0 => Fq2::one(),
         1 => Fq2::new(
-            const_fq([8314163329781907090, 11942187022798819835, 11282677263046157209, 1576150870752482284]),
-            const_fq([6763840483288992073, 7118829427391486816, 4016233444936635065, 2630958277570195709])
+            const_fq([
+                8314163329781907090,
+                11942187022798819835,
+                11282677263046157209,
+                1576150870752482284,
+            ]),
+            const_fq([
+                6763840483288992073,
+                7118829427391486816,
+                4016233444936635065,
+                2630958277570195709,
+            ]),
         ),
         2 => Fq2::new(
-            const_fq([8183898218631979349, 12014359695528440611, 12263358156045030468, 3187210487005268291]),
-            Fq::zero()
+            const_fq([
+                8183898218631979349,
+                12014359695528440611,
+                12263358156045030468,
+                3187210487005268291,
+            ]),
+            Fq::zero(),
         ),
         3 => Fq2::new(
-            const_fq([4938922280314430175, 13823286637238282975, 15589480384090068090, 481952561930628184]),
-            const_fq([3105754162722846417, 11647802298615474591, 13057042392041828081, 1660844386505564338])
+            const_fq([
+                4938922280314430175,
+                13823286637238282975,
+                15589480384090068090,
+                481952561930628184,
+            ]),
+            const_fq([
+                3105754162722846417,
+                11647802298615474591,
+                13057042392041828081,
+                1660844386505564338,
+            ]),
         ),
-        _ => unimplemented!()
+        _ => unimplemented!(),
     }
 }
 
@@ -44,7 +94,7 @@ fn frobenius_coeffs_c2(n: usize) -> Fq2 {
 pub struct Fq6 {
     pub c0: Fq2,
     pub c1: Fq2,
-    pub c2: Fq2
+    pub c2: Fq2,
 }
 
 impl Fq6 {
@@ -52,7 +102,7 @@ impl Fq6 {
         Fq6 {
             c0: c0,
             c1: c1,
-            c2: c2
+            c2: c2,
         }
     }
 
@@ -60,7 +110,7 @@ impl Fq6 {
         Fq6 {
             c0: self.c2.mul_by_nonresidue(),
             c1: self.c0,
-            c2: self.c1
+            c2: self.c1,
         }
     }
 
@@ -68,7 +118,7 @@ impl Fq6 {
         Fq6 {
             c0: self.c0 * by,
             c1: self.c1 * by,
-            c2: self.c2 * by
+            c2: self.c2 * by,
         }
     }
 
@@ -76,7 +126,7 @@ impl Fq6 {
         Fq6 {
             c0: self.c0.frobenius_map(power),
             c1: self.c1.frobenius_map(power) * frobenius_coeffs_c1(power),
-            c2: self.c2.frobenius_map(power) * frobenius_coeffs_c2(power)
+            c2: self.c2.frobenius_map(power) * frobenius_coeffs_c2(power),
         }
     }
 }
@@ -86,7 +136,7 @@ impl FieldElement for Fq6 {
         Fq6 {
             c0: Fq2::zero(),
             c1: Fq2::zero(),
-            c2: Fq2::zero()
+            c2: Fq2::zero(),
         }
     }
 
@@ -94,15 +144,15 @@ impl FieldElement for Fq6 {
         Fq6 {
             c0: Fq2::one(),
             c1: Fq2::zero(),
-            c2: Fq2::zero()
+            c2: Fq2::zero(),
         }
     }
-    
+
     fn random<R: Rng>(rng: &mut R) -> Self {
         Fq6 {
             c0: Fq2::random(rng),
             c1: Fq2::random(rng),
-            c2: Fq2::random(rng)
+            c2: Fq2::random(rng),
         }
     }
 
@@ -122,7 +172,7 @@ impl FieldElement for Fq6 {
         Fq6 {
             c0: s0 + s3.mul_by_nonresidue(),
             c1: s1 + s4.mul_by_nonresidue(),
-            c2: s1 + s2 + s3 - s0 - s4
+            c2: s1 + s2 + s3 - s0 - s4,
         }
     }
 
@@ -134,9 +184,9 @@ impl FieldElement for Fq6 {
             Some(t) => Some(Fq6 {
                 c0: t * c0,
                 c1: t * c1,
-                c2: t * c2
+                c2: t * c2,
             }),
-            None => None
+            None => None,
         }
     }
 }
@@ -152,7 +202,7 @@ impl Mul for Fq6 {
         Fq6 {
             c0: ((self.c1 + self.c2) * (other.c1 + other.c2) - b_b - c_c).mul_by_nonresidue() + a_a,
             c1: (self.c0 + self.c1) * (other.c0 + other.c1) - a_a - b_b + c_c.mul_by_nonresidue(),
-            c2: (self.c0 + self.c2) * (other.c0 + other.c2) - a_a + b_b - c_c
+            c2: (self.c0 + self.c2) * (other.c0 + other.c2) - a_a + b_b - c_c,
         }
     }
 }
@@ -164,7 +214,7 @@ impl Sub for Fq6 {
         Fq6 {
             c0: self.c0 - other.c0,
             c1: self.c1 - other.c1,
-            c2: self.c2 - other.c2
+            c2: self.c2 - other.c2,
         }
     }
 }
@@ -176,7 +226,7 @@ impl Add for Fq6 {
         Fq6 {
             c0: self.c0 + other.c0,
             c1: self.c1 + other.c1,
-            c2: self.c2 + other.c2
+            c2: self.c2 + other.c2,
         }
     }
 }
@@ -188,7 +238,7 @@ impl Neg for Fq6 {
         Fq6 {
             c0: -self.c0,
             c1: -self.c1,
-            c2: -self.c2
+            c2: -self.c2,
         }
     }
 }

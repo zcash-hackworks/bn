@@ -1,6 +1,6 @@
-use fields::{FieldElement, Fq2, Fq, Fq6, const_fq};
-use std::ops::{Add, Sub, Mul, Neg};
+use fields::{const_fq, FieldElement, Fq, Fq2, Fq6};
 use rand::Rng;
+use std::ops::{Add, Mul, Neg, Sub};
 
 use arith::U256;
 
@@ -8,18 +8,43 @@ fn frobenius_coeffs_c1(power: usize) -> Fq2 {
     match power % 12 {
         0 => Fq2::one(),
         1 => Fq2::new(
-            const_fq([12653890742059813127, 14585784200204367754, 1278438861261381767, 212598772761311868]),
-            const_fq([11683091849979440498, 14992204589386555739, 15866167890766973222, 1200023580730561873])
+            const_fq([
+                12653890742059813127,
+                14585784200204367754,
+                1278438861261381767,
+                212598772761311868,
+            ]),
+            const_fq([
+                11683091849979440498,
+                14992204589386555739,
+                15866167890766973222,
+                1200023580730561873,
+            ]),
         ),
         2 => Fq2::new(
-            const_fq([14595462726357228530, 17349508522658994025, 1017833795229664280, 299787779797702374]),
-            Fq::zero()
+            const_fq([
+                14595462726357228530,
+                17349508522658994025,
+                1017833795229664280,
+                299787779797702374,
+            ]),
+            Fq::zero(),
         ),
         3 => Fq2::new(
-            const_fq([3914496794763385213, 790120733010914719, 7322192392869644725, 581366264293887267]),
-            const_fq([12817045492518885689, 4440270538777280383, 11178533038884588256, 2767537931541304486])
+            const_fq([
+                3914496794763385213,
+                790120733010914719,
+                7322192392869644725,
+                581366264293887267,
+            ]),
+            const_fq([
+                12817045492518885689,
+                4440270538777280383,
+                11178533038884588256,
+                2767537931541304486,
+            ]),
         ),
-        _ => unimplemented!()
+        _ => unimplemented!(),
     }
 }
 
@@ -27,15 +52,12 @@ fn frobenius_coeffs_c1(power: usize) -> Fq2 {
 #[repr(C)]
 pub struct Fq12 {
     c0: Fq6,
-    c1: Fq6
+    c1: Fq6,
 }
 
 impl Fq12 {
     pub fn new(c0: Fq6, c1: Fq6) -> Self {
-        Fq12 {
-            c0: c0,
-            c1: c1
-        }
+        Fq12 { c0: c0, c1: c1 }
     }
 
     fn final_exponentiation_first_chunk(&self) -> Option<Fq12> {
@@ -46,8 +68,8 @@ impl Fq12 {
                 let d = c.frobenius_map(2);
 
                 Some(d * c)
-            },
-            None => None
+            }
+            None => None,
         }
     }
 
@@ -84,30 +106,30 @@ impl Fq12 {
     }
 
     pub fn final_exponentiation(&self) -> Option<Fq12> {
-        self.final_exponentiation_first_chunk().map(|a| a.final_exponentiation_last_chunk())
+        self.final_exponentiation_first_chunk()
+            .map(|a| a.final_exponentiation_last_chunk())
     }
 
     pub fn frobenius_map(&self, power: usize) -> Self {
         Fq12 {
             c0: self.c0.frobenius_map(power),
-            c1: self.c1.frobenius_map(power).scale(frobenius_coeffs_c1(power))
+            c1: self
+                .c1
+                .frobenius_map(power)
+                .scale(frobenius_coeffs_c1(power)),
         }
     }
 
     pub fn exp_by_neg_z(&self) -> Fq12 {
-        self.cyclotomic_pow(
-            U256([4965661367192848881, 0, 0, 0])
-        ).unitary_inverse()
+        self.cyclotomic_pow(U256([4965661367192848881, 0, 0, 0]))
+            .unitary_inverse()
     }
 
     pub fn unitary_inverse(&self) -> Fq12 {
         Fq12::new(self.c0, -self.c1)
     }
 
-    pub fn mul_by_024(&self,
-                      ell_0: Fq2,
-                      ell_vw: Fq2,
-                      ell_vv: Fq2) -> Fq12 {
+    pub fn mul_by_024(&self, ell_0: Fq2, ell_vw: Fq2, ell_vv: Fq2) -> Fq12 {
         let z0 = self.c0.c0;
         let z1 = self.c0.c1;
         let z2 = self.c0.c2;
@@ -171,7 +193,7 @@ impl Fq12 {
 
         Fq12 {
             c0: Fq6::new(z0, z1, z2),
-            c1: Fq6::new(z3, z4, z5)
+            c1: Fq6::new(z3, z4, z5),
         }
     }
 
@@ -222,7 +244,7 @@ impl Fq12 {
 
         Fq12 {
             c0: Fq6::new(z0, z4, z3),
-            c1: Fq6::new(z2, z1, z5)
+            c1: Fq6::new(z2, z1, z5),
         }
     }
 
@@ -250,21 +272,21 @@ impl FieldElement for Fq12 {
     fn zero() -> Self {
         Fq12 {
             c0: Fq6::zero(),
-            c1: Fq6::zero()
+            c1: Fq6::zero(),
         }
     }
 
     fn one() -> Self {
         Fq12 {
             c0: Fq6::one(),
-            c1: Fq6::zero()
+            c1: Fq6::zero(),
         }
     }
-    
+
     fn random<R: Rng>(rng: &mut R) -> Self {
         Fq12 {
             c0: Fq6::random(rng),
-            c1: Fq6::random(rng)
+            c1: Fq6::random(rng),
         }
     }
 
@@ -276,8 +298,10 @@ impl FieldElement for Fq12 {
         let ab = self.c0 * self.c1;
 
         Fq12 {
-            c0: (self.c1.mul_by_nonresidue() + self.c0) * (self.c0 + self.c1) - ab - ab.mul_by_nonresidue(),
-            c1: ab + ab
+            c0: (self.c1.mul_by_nonresidue() + self.c0) * (self.c0 + self.c1)
+                - ab
+                - ab.mul_by_nonresidue(),
+            c1: ab + ab,
         }
     }
 
@@ -285,9 +309,9 @@ impl FieldElement for Fq12 {
         match (self.c0.squared() - (self.c1.squared().mul_by_nonresidue())).inverse() {
             Some(t) => Some(Fq12 {
                 c0: self.c0 * t,
-                c1: -(self.c1 * t)
+                c1: -(self.c1 * t),
             }),
-            None => None
+            None => None,
         }
     }
 }
@@ -301,7 +325,7 @@ impl Mul for Fq12 {
 
         Fq12 {
             c0: bb.mul_by_nonresidue() + aa,
-            c1: (self.c0 + self.c1) * (other.c0 + other.c1) - aa - bb
+            c1: (self.c0 + self.c1) * (other.c0 + other.c1) - aa - bb,
         }
     }
 }
@@ -312,7 +336,7 @@ impl Sub for Fq12 {
     fn sub(self, other: Fq12) -> Fq12 {
         Fq12 {
             c0: self.c0 - other.c0,
-            c1: self.c1 - other.c1
+            c1: self.c1 - other.c1,
         }
     }
 }
@@ -323,7 +347,7 @@ impl Add for Fq12 {
     fn add(self, other: Fq12) -> Fq12 {
         Fq12 {
             c0: self.c0 + other.c0,
-            c1: self.c1 + other.c1
+            c1: self.c1 + other.c1,
         }
     }
 }
@@ -334,7 +358,7 @@ impl Neg for Fq12 {
     fn neg(self) -> Fq12 {
         Fq12 {
             c0: -self.c0,
-            c1: -self.c1
+            c1: -self.c1,
         }
     }
 }
