@@ -66,7 +66,9 @@ Licensed under either of
 
 at your option.
 
-Copyright 2016 [Zcash Electric Coin Company](https://z.cash/). The Zcash Company promises to maintain the "bn" crate on crates.io under this MIT/Apache-2.0 dual license.
+Copyright 2016-2021 [The Electric Coin Company](https://electriccoin.co/).
+The Electric Coin Company promises to maintain the "bn" crate on
+crates.io under this MIT/Apache-2.0 dual license.
 
 ### Authors
 
