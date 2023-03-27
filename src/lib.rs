@@ -162,7 +162,7 @@ impl Mul<Fr> for G2 {
     fn mul(self, other: Fr) -> G2 { G2(self.0 * other.0) }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, RustcDecodable, RustcEncodable)]
 #[repr(C)]
 pub struct Gt(fields::Fq12);
 
@@ -171,6 +171,19 @@ impl Gt {
     pub fn pow(&self, exp: Fr) -> Self { Gt(self.0.pow(exp.0)) }
     pub fn inverse(&self) -> Self { Gt(self.0.inverse().unwrap()) }
 }
+
+pub trait SerializableGt:
+        rustc_serialize::Encodable +
+        rustc_serialize::Decodable +
+        'static +
+        Copy +
+        Clone +
+        PartialEq +
+        Eq
+{
+}
+
+impl SerializableGt for Gt {}
 
 impl Mul<Gt> for Gt {
     type Output = Gt;
