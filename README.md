@@ -26,8 +26,8 @@ extern crate bn;
 ## API
 
 * `Fr` is an element of F<sub>r</sub>
-* `G1` is a point on the BN curve E/Fq : y^2 = x^3 + b
-* `G2` is a point on the twisted BN curve E'/Fq2 : y^2 = x^3 + b/xi
+* `G1` is a point on the BN curve E/F<sub>q</sub> : y<sup>2</sup> = x<sup>3</sup> + b
+* `G2` is a point on the twisted BN curve E'/F<sub>q2</sub> : y<sup>2</sup> = x<sup>3</sup> + b/xi
 * `Gt` is a group element (written multiplicatively) obtained with the `pairing` function over `G1` and `G2`.
 
 ### Examples
